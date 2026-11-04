@@ -22,19 +22,19 @@ def main():
         pg.click(f'.cal-cell[data-date="{today}"]')
         pg.wait_for_timeout(200)
         assert pg.is_visible("#overlay")
-        assert pg.locator("#pt-normal .pt-c").count() >= 1
+        assert pg.locator("#pt-body .pt-c").count() >= 1
         for label in ["内容","次数","组数","强度"]:
             assert pg.locator(f"th:text('{label}')").count() >= 1, f"缺表头 {label}"
 
-        pg.fill("#pt-normal .pt-c >> nth=0", "起跑练习")
-        pg.fill("#pt-normal .pt-r >> nth=0", "30")
-        pg.fill("#pt-normal .pt-s >> nth=0", "4")
-        pg.fill("#pt-normal .pt-i >> nth=0", "大")
-        pg.click('.pt-add[data-g="normal"]'); pg.wait_for_timeout(100)
-        pg.fill("#pt-normal .pt-c >> nth=1", "加速跑")
-        pg.fill("#pt-normal .pt-r >> nth=1", "60")
-        pg.fill("#pt-normal .pt-s >> nth=1", "6")
-        pg.fill("#pt-normal .pt-i >> nth=1", "中")
+        pg.fill("#pt-body .pt-c >> nth=0", "起跑练习")
+        pg.fill("#pt-body .pt-r >> nth=0", "30")
+        pg.fill("#pt-body .pt-s >> nth=0", "4")
+        pg.fill("#pt-body .pt-i >> nth=0", "大")
+        pg.click("#pt-addrow"); pg.wait_for_timeout(100)
+        pg.fill("#pt-body .pt-c >> nth=1", "加速跑")
+        pg.fill("#pt-body .pt-r >> nth=1", "60")
+        pg.fill("#pt-body .pt-s >> nth=1", "6")
+        pg.fill("#pt-body .pt-i >> nth=1", "中")
         pg.click("#pf-save"); pg.wait_for_timeout(200)
 
         mark = pg.locator(f'.cal-cell[data-date="{today}"] .mark')
@@ -47,8 +47,8 @@ def main():
         pg.click('.nav-item[data-view="calendar"]'); pg.wait_for_timeout(150)
         pg.click(f'.cal-cell[data-date="{today}"]')
         pg.wait_for_timeout(200)
-        assert pg.input_value("#pt-normal .pt-c >> nth=0") == "起跑练习"
-        assert pg.input_value("#pt-normal .pt-i >> nth=1") == "中"
+        assert pg.input_value("#pt-body .pt-c >> nth=0") == "起跑练习"
+        assert pg.input_value("#pt-body .pt-i >> nth=1") == "中"
 
         pg.evaluate("localStorage.removeItem('coachbench-v1');")
         assert not errors, f"控制台报错: {errors}"
