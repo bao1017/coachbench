@@ -317,8 +317,6 @@ function renderHome(){
   const totalPeople = state.people.length;
 
   v.innerHTML = `
-    <div class="view-title">今天干点啥，一眼看完</div>
-    <div class="view-sub">下面三格分别对应计划、测试、人员，哪格有情况点哪格。</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
       <button class="stat-cell" data-go="calendar">
         <div class="stat-num">${todayUndone}</div><div class="stat-label">今天未完成的计划</div></button>
