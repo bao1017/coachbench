@@ -296,12 +296,18 @@ function renderHome(){
   const todays = state.plans.filter(p=>p.date===today).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
   const overdue = state.plans.filter(p=>!p.done && p.date < today);
   const peopleById = Object.fromEntries(state.people.map(p=>[p.id,p.name]));
-  const planRow = p => `
-    <div class="row" style="padding:6px 0">
-      <div class="grow">
-        <span class="tag ${p.group==='injured'?'student':'athlete'}" style="margin-right:6px">${p.group==='injured'?'伤病':'正常'}</span>${escapeHtml(p.title)}
-      </div>
-    </div>`;
+  const normalList = todays.filter(p=>(p.group||'normal')==='normal');
+  const injuredList = todays.filter(p=>p.group==='injured');
+  function groupRows(list, label, cls){
+    if(!list.length) return '';
+    return list.map((p,i)=>`<tr>
+      ${i===0?`<td rowspan="${list.length}" class="tag ${cls}" style="vertical-align:middle;text-align:center;width:60px">${label}</td>`:''}
+      <td style="padding:9px 10px;border-bottom:1px solid var(--line)">${escapeHtml(p.title)}</td>
+    </tr>`).join('');
+  }
+  const todayTable = (normalList.length||injuredList.length)
+    ? `<table style="width:100%;border-collapse:collapse;table-layout:fixed">${groupRows(normalList,'正常','athlete')}${groupRows(injuredList,'伤病','student')}</table>`
+    : '<div class="empty-tip">今天还没安排计划</div>';
   const overdueHtml = '';
   const memos = state.memos.slice().reverse().map(m=>`
     <div class="memo-item ${m.done?'done':''}">
@@ -328,7 +334,7 @@ function renderHome(){
     <div class="grid-2">
       <div class="card">
         <h3>今日计划 <span style="float:right"><button class="btn ghost small" id="go-cal">去日历安排 ›</button></span></h3>
-        ${todays.map(planRow).join('') || '<div class="empty-tip">今天还没安排计划</div>'}
+        ${todayTable}
         ${overdueHtml}
       </div>
       <div class="card">
