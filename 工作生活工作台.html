@@ -555,6 +555,8 @@ function renderPerson(id){
   const p = state.people.find(x=>x.id===id);
   const v = document.getElementById('view-person');
   if(!p){ v.innerHTML='<div class="empty-tip">找不到这个人</div>'; return; }
+  if(!p.athlete) p.athlete = {};   // 兼容老数据
+  if(!p.createdAt) p.createdAt = todayStr();
   const goals = state.goals.filter(g=>g.personId===id).sort((a,b)=>a.deadline.localeCompare(b.deadline));
   const recs = state.stageRecords.filter(r=>r.personId===id).sort((a,b)=>b.date.localeCompare(a.date));
   const profileRows = `
