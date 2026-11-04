@@ -90,9 +90,9 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .tag{display:inline-block;padding:1px 9px;border-radius:4px;font-size:12px;background:#E7E2D2;color:#5C5F52}
 .tag.student{background:#DCE4E8;color:#33525F}
 .tag.athlete{background:#DCE8DC;color:#2F5A38}
-.swipe{position:relative;overflow:hidden;border-radius:8px}
-.swipe-in{transition:transform .2s ease;background:var(--card);position:relative;z-index:1;touch-action:pan-y;user-select:none}
-.swipe-del{position:absolute;top:0;right:0;bottom:0;width:76px;background:#b23a2e;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px}
+.swipe{position:relative;overflow:hidden;border-radius:8px;background:transparent}
+.swipe-in{transition:transform .2s ease;background:var(--card);position:relative;z-index:1;touch-action:pan-y;user-select:none;width:100%;box-sizing:border-box}
+.swipe-del{position:absolute;top:0;right:0;bottom:0;width:76px;background:#b23a2e;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:0}
 .dot-status{width:9px;height:9px;border-radius:50%;background:#C9C4B4;flex:none}
 .dot-status.hot{background:var(--cinnabar)}
 .dot-status.ok{background:var(--pine)}
@@ -638,17 +638,30 @@ function renderPerson(id){
 function bindSwipe(root){
   root.querySelectorAll('.swipe').forEach(w=>{
     const inner = w.querySelector('.swipe-in');
-    let sx=null, dx=0, open=false;
-    inner.addEventListener('pointerdown', e=>{ sx=e.clientX; dx=0; });
+    let sx=0, sy=0, dx=0, dragging=false, open=false;
+    inner.addEventListener('pointerdown', e=>{
+      sx=e.clientX; sy=e.clientY; dx=0; dragging=false;
+      inner.style.transition='none';
+    });
     inner.addEventListener('pointermove', e=>{
-      if(sx==null) return;
-      dx = e.clientX - sx;
-      let x = open ? dx-76 : dx;
+      if(!sx) return;
+      const mx = e.clientX - sx, my = e.clientY - sy;
+      if(!dragging){
+        if(Math.abs(mx)<6 || Math.abs(my)>Math.abs(mx)) return; // 竖滑/点击不接管
+        dragging = true;
+      }
+      dx = mx;
+      let x = open ? mx-76 : mx;
       if(x>0) x=0; if(x<-76) x=-76;
       inner.style.transform = `translateX(${x}px)`;
     });
-    const end = ()=>{ if(sx==null) return; open = dx < -40;
-      inner.style.transform = open ? 'translateX(-76px)' : ''; sx=null; };
+    const end = ()=>{
+      if(!sx) return;
+      if(dragging) open = dx < -36;
+      inner.style.transition='';
+      inner.style.transform = open ? 'translateX(-76px)' : '';
+      sx=0; dragging=false;
+    };
     inner.addEventListener('pointerup', end);
     inner.addEventListener('pointercancel', end);
     inner.addEventListener('click', e=>{
