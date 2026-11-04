@@ -570,6 +570,7 @@ function renderPeople(){
         <div style="font-size:13px;color:var(--muted)">${key}</div>
       </div>
       <span class="${personStatusDot(p)}" title="目标状态"></span>
+      <button class="btn ghost small" data-person-del="${p.id}">删</button>
     </div>`;
   }).join('');
   v.innerHTML = `
@@ -586,6 +587,16 @@ function renderPeople(){
     document.querySelector('#ppl-q').focus(); document.querySelector('#ppl-q').setSelectionRange(99,99); };
   v.querySelector('#ppl-add').onclick = ()=>personForm(null);
   v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
+  v.querySelectorAll('[data-person-del]').forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation();
+    const p = state.people.find(x=>x.id===b.dataset.personDel);
+    confirmDialog(`删除队员"${p.name}"？他的目标和阶段记录也会一起删掉。`, ()=>{
+      state.people = state.people.filter(x=>x.id!==p.id);
+      state.goals = state.goals.filter(g=>g.personId!==p.id);
+      state.stageRecords = state.stageRecords.filter(r=>r.personId!==p.id);
+      save(); renderPeople(); toast('已删除');
+    });
+  });
 }
 function personForm(p){
   const isEdit = !!p;
