@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070B1A">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>我的工作台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23B53A2E'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='%23FBF9F3' font-family='sans-serif' font-weight='bold'>台</text></svg>">
+<style>
+/* ============ 设计 token：iOS 玻璃拟态暗色 ============ */
+:root{
+  --bg:#070B1A;
+  --ink:#FFFFFF;
+  --muted:rgba(255,255,255,.62);
+  --line:rgba(255,255,255,.14);
+  --glass:rgba(255,255,255,.08);
+  --glass-strong:rgba(255,255,255,.14);
+  --cinnabar:#FF6B5E;
+  --pine:#4CD08A;
+  --amber:#FFC46B;
+  --radius:16px;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","SF Pro Display","Segoe UI",sans-serif;
+  font-size:15px;line-height:1.6;
+  position:relative;overflow:hidden;
+}
+/* 星空背景 */
+body::before,body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 32% 72%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 55% 32%, #cfe0ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 88% 58%, #ffe3c2 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 88%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 66% 84%, #d6e4ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 44% 8%, #fff 50%, transparent 51%);
+  background-size:100% 100%;
+  animation:twinkle 6s ease-in-out infinite alternate;
+}
+body::after{
+  background-image:
+    radial-gradient(1px 1px at 8% 48%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 28% 28%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 48% 62%, #cfe0ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 38%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 92% 82%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 15% 65%, #ffe3c2 50%, transparent 51%),
+    radial-gradient(1px 1px at 60% 50%, #fff 50%, transparent 51%);
+  animation-duration:9s;
+  opacity:.7;
+}
+@keyframes twinkle{from{opacity:.55}to{opacity:1}}
+#app{position:relative;z-index:1}
+button{font-family:inherit;font-size:15px;cursor:pointer;color:inherit}
+input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+
+/* ============ 整体布局 ============ */
+#app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:60px 1fr;height:100vh}
+#topbar{
+  grid-column:1/3;display:flex;align-items:center;justify-content:space-between;
+  padding:0 26px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.05);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+}
+#brand{font-size:17px;font-weight:800;letter-spacing:1px}
+#top-right{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:13px}
+#save-status{display:flex;align-items:center;gap:6px}
+#save-status .dot{width:7px;height:7px;border-radius:50%;background:var(--pine);box-shadow:0 0 8px var(--pine)}
+
+/* ============ 侧边导航 ============ */
+#sidebar{
+  border-right:1px solid var(--line);
+  background:rgba(255,255,255,.04);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  padding:18px 10px;display:flex;flex-direction:column;gap:4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:12px 14px;border:none;background:transparent;border-radius:12px;
+  color:rgba(255,255,255,.78);text-align:left;font-size:15px;font-weight:600;
+  transition:background .15s;
+}
+.nav-item svg{width:19px;height:19px;flex:none}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.nav-divider{height:1px;background:var(--line);margin:10px 8px}
+#nav-settings{margin-top:auto}
+
+/* ============ 内容区 ============ */
+#main{overflow:auto;padding:30px 34px}
+.view{max-width:1080px;margin:0 auto}
+.view-title{font-size:26px;font-weight:800;margin-bottom:6px;letter-spacing:.5px}
+.view-sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+
+/* ============ 卡片：毛玻璃 ============ */
+.card{
+  background:var(--glass);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:var(--shadow);
+}
+.card h3{font-size:15px;font-weight:700;margin-bottom:12px;color:#fff}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.grid-2,.grid-4{grid-template-columns:1fr}}
+
+/* ============ 摘要格 ============ */
+.stat-cell{
+  cursor:pointer;text-align:left;border:1px solid rgba(255,255,255,.16);
+  background:var(--glass);border-radius:var(--radius);padding:18px;
+  backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:var(--shadow);transition:transform .15s,background .15s;
+}
+.stat-cell:hover{background:var(--glass-strong);transform:translateY(-2px)}
+.stat-num{font-size:32px;font-weight:800;line-height:1.15}
+.stat-num.warn{color:var(--cinnabar)}
+.stat-label{color:var(--muted);font-size:13px;margin-top:4px}
+
+/* ============ 按钮 ============ */
+.btn{
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.92);color:#0B1020;
+  padding:9px 18px;border-radius:12px;font-weight:700;
+}
+.btn:hover{background:#fff}
+.btn.ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.btn.ghost:hover{background:rgba(255,255,255,.16)}
+.btn.danger{background:var(--cinnabar);border-color:var(--cinnabar);color:#fff}
+.btn.small{padding:5px 12px;font-size:13px;border-radius:9px}
+
+/* ============ 列表行 ============ */
+.row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.08)}
+.row:last-child{border-bottom:none}
+.row .grow{flex:1;min-width:0}
+.tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.tag.student{background:rgba(120,180,255,.22);color:#CFE2FF;border-color:rgba(120,180,255,.35)}
+.tag.athlete{background:rgba(120,230,170,.18);color:#C8F5DA;border-color:rgba(120,230,170,.32)}
+.swipe{position:relative;overflow:hidden;border-radius:12px;background:#141B30}
+.swipe-in{transition:transform .2s ease;background:#1B2440;position:relative;z-index:1;touch-action:pan-y;user-select:none;width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.08)}
+.swipe-del{position:absolute;top:0;right:0;bottom:0;width:76px;background:#E5503F;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:0;font-weight:700}
+.dot-status{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3);flex:none}
+.dot-status.hot{background:var(--cinnabar);box-shadow:0 0 8px var(--cinnabar)}
+.dot-status.ok{background:var(--pine);box-shadow:0 0 8px var(--pine)}
+
+/* ============ 表单 ============ */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;
+  background:rgba(255,255,255,.08);color:#fff;
+}
+.field input::placeholder,.field textarea::placeholder{color:rgba(255,255,255,.35)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid rgba(255,255,255,.5);outline-offset:-1px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#modal input.pt-c,#modal input.pt-r,#modal input.pt-s,#modal input.pt-i{
+  padding:7px 9px;border:1px solid rgba(255,255,255,.16);border-radius:8px;
+  background:rgba(255,255,255,.08);color:#fff;
+}
+#modal input:focus{outline:2px solid rgba(255,255,255,.4);outline-offset:-1px}
+
+/* ============ 日历 ============ */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-head h3{font-size:17px;font-weight:700}
+.cal-nav{display:flex;gap:8px;align-items:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cal-dow{text-align:center;font-size:12px;color:var(--muted);padding:6px 0}
+.cal-cell{
+  min-height:130px;border:1px solid rgba(255,255,255,.12);border-radius:12px;
+  background:rgba(255,255,255,.06);
+  padding:8px;font-size:13px;cursor:pointer;overflow:hidden;
+  transition:background .15s;
+}
+.cal-cell:hover{background:rgba(255,255,255,.12)}
+.cal-cell.other{opacity:.3}
+.cal-cell.today{border:1.5px solid var(--cinnabar);box-shadow:0 0 12px rgba(255,107,94,.3)}
+.cal-cell.selected{border:1.5px solid #fff;background:rgba(255,255,255,.14)}
+.cal-cell .d{font-weight:700}
+.cal-cell .mark{font-size:11px;color:var(--pine);margin-top:3px}
+
+/* ============ 弹窗 / toast ============ */
+#overlay{
+  position:fixed;inset:0;background:rgba(7,11,26,.55);display:none;
+  align-items:flex-start;justify-content:center;padding:5vh 4vw;z-index:50;overflow-y:auto;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+#overlay.show{display:flex}
+#modal{
+  background:rgba(28,34,58,.78);border:1px solid rgba(255,255,255,.18);
+  border-radius:20px;padding:28px 32px;width:min(1000px,94vw);max-width:none;
+  backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);color:#fff;
+}
+#modal h3{margin-bottom:14px;font-size:18px;font-weight:800}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+#toast{
+  position:fixed;right:24px;bottom:24px;background:rgba(255,255,255,.16);color:#fff;
+  padding:11px 20px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .25s;z-index:99;pointer-events:none;
+  border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(20px);
+}
+#toast.show{opacity:1}
+
+/* ============ 备忘 ============ */
+.memo-item{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed rgba(255,255,255,.12)}
+.memo-item:last-child{border-bottom:none}
+.memo-item.done .memo-text{text-decoration:line-through;color:var(--muted)}
+.memo-del{margin-left:auto;border:none;background:none;color:var(--muted);font-size:16px;visibility:hidden}
+.memo-item:hover .memo-del{visibility:visible}
+#memo-input{
+  width:100%;padding:11px 14px;border:1px solid rgba(255,255,255,.16);border-radius:12px;
+  background:rgba(255,255,255,.08);color:#fff;
+}
+#memo-input::placeholder{color:rgba(255,255,255,.35)}
+
+/* ============ 时间线 ============ */
+.tl{border-left:2px solid rgba(255,255,255,.18);margin-left:8px;padding-left:18px}
+.tl-item{position:relative;padding-bottom:16px}
+.tl-item::before{content:"";position:absolute;left:-23px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--pine);box-shadow:0 0 8px var(--pine)}
+.tl-date{font-size:12px;color:var(--muted)}
+.up{color:var(--pine);font-weight:700}
+.down{color:var(--cinnabar);font-weight:700}
+.flat{color:var(--muted)}
+.empty-tip{color:var(--muted);font-size:14px;padding:18px 0;text-align:center}
+.warn-text{color:var(--cinnabar)}
+.section-gap{margin-top:22px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div id="brand">我的工作台</div>
+    <div id="top-right">
+      <span id="top-date"></span>
+      <button class="btn small ghost" id="btn-save" style="border-color:var(--line)">手动保存</button>
+      <span id="save-status"><span class="dot"></span>已自动保存</span>
+    </div>
+  </div>
+
+  <nav id="sidebar">
+    <button class="nav-item" data-view="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      首页
+    </button>
+    <button class="nav-item" data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      计划日期
+    </button>
+    <button class="nav-item" data-view="people">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/></svg>
+      人员名单
+    </button>
+    <button class="nav-item" data-view="stages">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+      阶段与目标
+    </button>
+    <div class="nav-divider"></div>
+    <button class="nav-item" id="nav-settings" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>
+      数据与设置
+    </button>
+  </nav>
+
+  <main id="main">
+    <div id="view-home" class="view"></div>
+    <div id="view-calendar" class="view"></div>
+    <div id="view-people" class="view"></div>
+    <div id="view-person" class="view" style="display:none"></div>
+    <div id="view-stages" class="view"></div>
+    <div id="view-settings" class="view"></div>
+  </main>
+</div>
+
+<div id="overlay"><div id="modal"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ================= 数据层 ================= */
+const STORE_KEY = 'coachbench-v1';
+function defaultState(){ return { people:[], plans:[], goals:[], stageRecords:[], memos:[] }; }
+let state;
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const s = JSON.parse(raw); return Object.assign(defaultState(), s); }
+  }catch(e){ console.error('读取本地数据失败', e); }
+  return defaultState();
+}
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  flashSaved();
+}
+function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function ymd(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function todayStr(){ return ymd(new Date()); }
+function daysUntil(dateStr){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const t = new Date(dateStr + 'T00:00:00');
+  return Math.round((t - now)/86400000);
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ================= 通用组件 ================= */
+let toastTimer = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2000);
+}
+function flashSaved(){
+  // 顶部状态已常驻"已自动保存"，无需额外动作
+}
+function openModal(html){
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target.id === 'overlay') closeModal();
+});
+function confirmDialog(msg, onYes){
+  openModal(`
+    <h3>请确认</h3>
+    <p style="color:var(--ink)">${msg}</p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cf-no">取消</button>
+      <button class="btn danger" id="cf-yes">确认</button>
+    </div>`);
+  document.getElementById('cf-no').onclick = closeModal;
+  document.getElementById('cf-yes').onclick = ()=>{ closeModal(); onYes(); };
+}
+
+/* ================= 路由 ================= */
+let route = { view:'home', personId:null };
+function navigate(view, personId){
+  route = { view, personId: personId||null };
+  render();
+}
+function render(){
+  document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.view===route.view));
+  const map = { home:'view-home', calendar:'view-calendar', people:'view-people',
+                person:'view-person', stages:'view-stages', settings:'view-settings' };
+  document.getElementById(map[route.view]).style.display='block';
+  if(route.view==='home') renderHome();
+  else if(route.view==='calendar') renderCalendar();
+  else if(route.view==='people') renderPeople();
+  else if(route.view==='person') renderPerson(route.personId);
+  else if(route.view==='stages') renderStages();
+  else if(route.view==='settings') renderSettings();
+}
+document.querySelectorAll('.nav-item').forEach(b=>{
+  b.addEventListener('click', ()=>navigate(b.dataset.view));
+});
+
+/* ================= 阶段5：首页 ================= */
+function renderHome(){
+  const v = document.getElementById('view-home');
+  const today = todayStr();
+  const todays = state.plans.filter(p=>p.date===today).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
+  const overdue = state.plans.filter(p=>!p.done && p.date < today);
+  const peopleById = Object.fromEntries(state.people.map(p=>[p.id,p.name]));
+  const todayTable = todays.length
+    ? todays.map(p=>`<div style="padding:7px 0">
+        <span class="tag ${p.group==='injured'?'student':'athlete'}" style="margin-right:8px">${p.group==='injured'?'伤病':'正常'}</span>${escapeHtml(p.title)}
+      </div>`).join('')
+    : '<div class="empty-tip">今天还没安排计划</div>';
+  const overdueHtml = '';
+  const memos = state.memos.slice().reverse().map(m=>`
+    <div class="memo-item ${m.done?'done':''}">
+      <input type="checkbox" data-memo-done="${m.id}" ${m.done?'checked':''} style="width:16px;height:16px">
+      <span class="memo-text">${escapeHtml(m.text)}</span>
+      <button class="memo-del" data-memo-del="${m.id}">×</button>
+    </div>`).join('') || '<div class="empty-tip">随手写一句备忘，回车就贴上</div>';
+
+  // 三个摘要：计划 / 测试总览 / 人员总览
+  const todayUndone = todays.filter(p=>!p.done).length;
+  const weekAgoStr = ymd(new Date(Date.now()-7*86400000));
+  const testedPeople = new Set(state.stageRecords.filter(r=>r.date >= weekAgoStr).map(r=>r.personId)).size;
+  const totalPeople = state.people.length;
+
+  v.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+      <button class="stat-cell" data-go="calendar">
+        <div class="stat-num">${todayUndone}</div><div class="stat-label">今天未完成的计划</div></button>
+      <button class="stat-cell" data-go="stages">
+        <div class="stat-num">${testedPeople}</div><div class="stat-label">本周已测人数（测试总览）</div></button>
+      <button class="stat-cell" data-go="people">
+        <div class="stat-num">${totalPeople}</div><div class="stat-label">在册队员（人员总览）</div></button>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>今日计划 <span style="float:right"><button class="btn ghost small" id="go-cal">去日历安排 ›</button></span></h3>
+        ${todayTable}
+        ${overdueHtml}
+      </div>
+      <div class="card">
+        <h3>快速备忘</h3>
+        <input id="memo-input" placeholder="写一句话，回车贴上…">
+        <div style="margin-top:10px">${memos}</div>
+      </div>
+    </div>`;
+  v.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>navigate(b.dataset.go));
+  v.querySelector('#go-cal').onclick=()=>navigate('calendar');
+  const mi = v.querySelector('#memo-input');
+  mi.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
+      const t = mi.value.trim();
+      if(!t) return;
+      state.memos.push({id:uid(), text:t, done:false, createdAt:Date.now()});
+      save(); renderHome(); document.getElementById('memo-input').focus();
+    }
+  });
+  v.querySelectorAll('[data-memo-done]').forEach(cb=>cb.onchange=()=>{
+    const m=state.memos.find(x=>x.id===cb.dataset.memoDone); m.done=cb.checked; save(); renderHome();
+  });
+  v.querySelectorAll('[data-memo-del]').forEach(b=>b.onclick=()=>{
+    state.memos=state.memos.filter(x=>x.id!==b.dataset.memoDel); save(); renderHome();
+  });
+}
+
+/* ================= 阶段2：计划日历 ================= */
+let calYear, calMonth, selDate;
+function renderCalendar(){
+  if(calYear===undefined){ const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth(); selDate=todayStr(); }
+  const v = document.getElementById('view-calendar');
+  const first = new Date(calYear, calMonth, 1);
+  const startOffset = (first.getDay()+6)%7; // 周一开头
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  const today = todayStr();
+  let cells = '';
+  const dow = ['一','二','三','四','五','六','日'];
+  dow.forEach(d=>cells+=`<div class="cal-dow">周${d}</div>`);
+  for(let i=0;i<42;i++){
+    const dayNum = i - startOffset + 1;
+    let cls='cal-cell', label, iso;
+    if(dayNum<1){ label=prevDays+dayNum-1; cls+=' other'; }
+    else if(dayNum>daysInMonth){ label=dayNum-daysInMonth; cls+=' other'; }
+    else { label=dayNum; iso=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`; }
+    if(iso===today) cls+=' today';
+    if(iso===selDate) cls+=' selected';
+    const cnt = iso ? state.plans.filter(p=>p.date===iso).length : 0;
+    cells += `<div class="${cls}" data-date="${iso||''}"><div class="d">${label}</div>${cnt?`<div class="mark">${cnt} 件事</div>`:''}</div>`;
+  }
+  v.innerHTML = `
+    <div class="view-title">计划日期</div>
+    <div class="view-sub">点任意一天，弹出当天的计划表格，直接在表里填内容、次数、组数、强度。</div>
+    <div class="cal-head">
+      <div class="cal-nav">
+        <button class="btn ghost small" id="cal-prev">‹ 上月</button>
+        <h3>${calYear} 年 ${calMonth+1} 月</h3>
+        <button class="btn ghost small" id="cal-next">下月 ›</button>
+        <button class="btn ghost small" id="cal-today">回到今天</button>
+      </div>
+      <button class="btn" id="plan-add">＋ 编辑 ${selDate.slice(5).replace('-','/')} 的计划</button>
+    </div>
+    <div class="cal-grid">${cells}</div>`;
+  // 事件
+  document.getElementById('cal-prev').onclick=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); };
+  document.getElementById('cal-next').onclick=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); };
+  document.getElementById('cal-today').onclick=()=>{ const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth(); selDate=todayStr(); renderCalendar(); };
+  v.querySelectorAll('.cal-cell[data-date]').forEach(c=>{
+    c.onclick=()=>{ selDate=c.dataset.date; renderCalendar(); planTableForm(selDate); };
+  });
+  document.getElementById('plan-add').onclick=()=>planTableForm(selDate);
+}
+function typeLabel(t){ return ({work:'工作',training:'训练',life:'生活'})[t]||'工作'; }
+function blankRow(){ return {content:'',reps:'',sets:'',intensity:'',done:false}; }
+function planTableForm(dateStr){
+  const todayPlans = state.plans.filter(p=>p.date===dateStr);
+  const normal = todayPlans.filter(p=>(p.group||'normal')==='normal').map(p=>({content:p.title,reps:p.reps||'',sets:p.sets||'',intensity:p.intensity||''}));
+  const injured = todayPlans.filter(p=>p.group==='injured').map(p=>({content:p.title,reps:p.reps||'',sets:p.sets||'',intensity:p.intensity||''}));
+  if(!normal.length) normal.push(blankRow());
+  if(!injured.length) injured.push(blankRow());
+  function tableHtml(bodyId){
+    return `<table style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <thead><tr style="text-align:left;color:var(--muted);font-size:13px">
+        <th style="width:40px;padding:6px 4px">#</th>
+        <th style="padding:6px 4px">内容</th>
+        <th style="width:90px;padding:6px 4px">次数</th>
+        <th style="width:80px;padding:6px 4px">组数</th>
+        <th style="width:100px;padding:6px 4px">强度</th>
+        <th style="width:50px"></th>
+      </tr></thead>
+      <tbody id="${bodyId}"></tbody>
+    </table>`;
+  }
+  openModal(`
+    <h3>${dateStr} 训练计划</h3>
+    <div style="font-weight:700;margin:6px 0 4px">正常训练计划</div>
+    ${tableHtml('pt-normal')}
+    <button class="btn ghost small pt-add" data-g="normal" style="margin:8px 0 18px">＋ 加一行</button>
+    <div style="font-weight:700;margin:6px 0 4px;color:var(--cinnabar)">伤病队员训练计划</div>
+    ${tableHtml('pt-injured')}
+    <button class="btn ghost small pt-add" data-g="injured" style="margin:8px 0">＋ 加一行</button>
+    <div class="modal-actions">
+      <button class="btn ghost" id="pf-cancel">取消</button>
+      <button class="btn" id="pf-save">保存</button>
+    </div>`);
+  function syncBody(bodyId, arr){
+    document.querySelectorAll('#'+bodyId+' tr').forEach((tr,i)=>{
+      arr[i].content = tr.querySelector('.pt-c').value;
+      arr[i].reps = tr.querySelector('.pt-r').value;
+      arr[i].sets = tr.querySelector('.pt-s').value;
+      arr[i].intensity = tr.querySelector('.pt-i').value;
+    });
+  }
+  function drawBody(bodyId, arr){
+    document.getElementById(bodyId).innerHTML = arr.map((r,i)=>`
+      <tr>
+        <td style="padding:4px">${i+1}</td>
+        <td style="padding:4px"><input class="pt-c" value="${escapeHtml(r.content)}" style="width:100%"></td>
+        <td style="padding:4px"><input class="pt-r" value="${escapeHtml(r.reps)}" style="width:100%"></td>
+        <td style="padding:4px"><input class="pt-s" value="${escapeHtml(r.sets)}" style="width:100%"></td>
+        <td style="padding:4px"><input class="pt-i" value="${escapeHtml(r.intensity)}" style="width:100%"></td>
+        <td style="padding:4px"><button class="btn ghost small pt-del" data-b="${bodyId}" data-i="${i}">删</button></td>
+      </tr>`).join('');
+    document.querySelectorAll(`#${bodyId} .pt-del`).forEach(b=>b.onclick=()=>{
+      syncBody(bodyId, arr); arr.splice(Number(b.dataset.i),1); drawBody(bodyId, arr);
+    });
+  }
+  drawBody('pt-normal', normal);
+  drawBody('pt-injured', injured);
+  document.querySelectorAll('.pt-add').forEach(b=>b.onclick=()=>{
+    const bodyId = b.dataset.g==='normal'?'pt-normal':'pt-injured';
+    const arr = b.dataset.g==='normal'?normal:injured;
+    syncBody(bodyId, arr); arr.push(blankRow()); drawBody(bodyId, arr);
+  });
+  document.getElementById('pf-cancel').onclick=closeModal;
+  document.getElementById('pf-save').onclick=()=>{
+    syncBody('pt-normal', normal); syncBody('pt-injured', injured);
+    state.plans = state.plans.filter(p=>p.date!==dateStr);
+    const push = (arr, group)=>arr.filter(r=>r.content.trim()).forEach(r=>{
+      state.plans.push({ id:uid(), date:dateStr, time:'', title:r.content.trim(),
+        reps:r.reps.trim(), sets:r.sets.trim(), intensity:r.intensity.trim(),
+        group, type:'work', peopleIds:[], note:'', done:false });
+    });
+    push(normal,'normal'); push(injured,'injured');
+    save(); closeModal(); renderCalendar(); toast('已保存');
+  };
+}
+/* ================= 阶段3：人员名单 + 专属页 ================= */
+let peopleFilter = 'all', peopleQuery = '';
+function personStatusDot(person){
+  const g = state.goals.filter(g=>g.personId===person.id && !g.done);
+  if(!g.length) return 'dot-status';
+  const soon = g.some(x=>daysUntil(x.deadline)<=10);
+  return soon ? 'dot-status hot' : 'dot-status ok';
+}
+function renderPeople(){
+  const v = document.getElementById('view-people');
+  let list = state.people.slice();
+  if(peopleQuery) list = list.filter(p=>p.name.includes(peopleQuery));
+  const rows = list.map(p=>{
+    const key = `主项：${escapeHtml((p.athlete&&p.athlete.specialty)||'—')}`;
+    return `<div class="row" data-person="${p.id}" style="cursor:pointer">
+      <div class="grow">
+        <div style="font-weight:600">${escapeHtml(p.name)}
+          <span class="tag athlete">队员</span></div>
+        <div style="font-size:13px;color:var(--muted)">${key}</div>
+      </div>
+      <span class="${personStatusDot(p)}" title="目标状态"></span>
+    </div>`;
+  }).join('');
+  v.innerHTML = `
+    <div class="view-title">人员名单</div>
+    <div class="view-sub">队员都在这里，点名字看他的档案、目标和阶段记录。</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <input id="ppl-q" placeholder="搜索姓名…" value="${escapeHtml(peopleQuery)}" style="padding:8px 12px;border:1px solid var(--line);border-radius:6px;width:200px">
+      <span style="flex:1"></span>
+      <button class="btn" id="ppl-add">＋ 加人</button>
+    </div>
+    <div class="card">${rows || '<div class="empty-tip">还没有人。点右上角"加人"，加第一个队员。</div>'}</div>`;
+  // 事件
+  v.querySelector('#ppl-q').oninput = e=>{ peopleQuery=e.target.value.trim(); renderPeople();
+    document.querySelector('#ppl-q').focus(); document.querySelector('#ppl-q').setSelectionRange(99,99); };
+  v.querySelector('#ppl-add').onclick = ()=>personForm(null);
+  v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
+}
+function personForm(p){
+  const isEdit = !!p;
+  p = p || { kind:'athlete', name:'', athlete:{}, createdAt:todayStr() };
+  const a = p.athlete || {};
+  openModal(`
+    <h3>${isEdit?'改档案':'加人'}</h3>
+    <div class="field"><label>姓名（必填）</label><input id="pf-name" value="${escapeHtml(p.name)}"></div>
+    <div class="form-row">
+      <div class="field"><label>组别</label><input id="pf-group" value="${escapeHtml(a.group||'')}"></div>
+      <div class="field"><label>主项（如短跑/跳跃）</label><input id="pf-spec" value="${escapeHtml(a.specialty||'')}"></div>
+    </div>
+    <div class="field"><label>入队日期</label><input type="date" id="pf-jdate" value="${a.joinDate||todayStr()}"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="pfc-cancel">取消</button>
+      <button class="btn" id="pfc-save">保存</button>
+    </div>`);
+  document.getElementById('pfc-cancel').onclick = closeModal;
+  document.getElementById('pfc-save').onclick = ()=>{
+    const name = document.getElementById('pf-name').value.trim();
+    if(!name){ toast('姓名不能为空'); return; }
+    const obj = isEdit ? p : { id:uid(), createdAt:todayStr() };
+    obj.kind = 'athlete'; obj.name = name;
+    obj.athlete = {
+      group: document.getElementById('pf-group').value.trim(),
+      specialty: document.getElementById('pf-spec').value.trim(),
+      joinDate: document.getElementById('pf-jdate').value
+    };
+    if(!isEdit) state.people.push(obj);
+    save(); closeModal(); renderPeople(); toast('已保存');
+  };
+}
+function renderPerson(id){
+  const p = state.people.find(x=>x.id===id);
+  const v = document.getElementById('view-person');
+  if(!p){ v.innerHTML='<div class="empty-tip">找不到这个人</div>'; return; }
+  if(!p.athlete) p.athlete = {};   // 兼容老数据
+  if(!p.createdAt) p.createdAt = todayStr();
+  const goals = state.goals.filter(g=>g.personId===id).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  const recs = state.stageRecords.filter(r=>r.personId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const profileRows = `
+    <div class="form-row">
+      <div class="field"><label>组别</label><input id="ed-group" value="${escapeHtml(p.athlete.group||'')}"></div>
+      <div class="field"><label>主项</label><input id="ed-spec" value="${escapeHtml(p.athlete.specialty||'')}"></div>
+    </div>
+    <div class="field"><label>入队日期</label><input type="date" id="ed-jdate" value="${p.athlete.joinDate||''}"></div>`;
+  const goalHtml = goals.map(g=>{
+    const left = daysUntil(g.deadline);
+    const leftCls = (!g.done && left<=10) ? 'warn-text' : '';
+    return `<div class="swipe">
+      <div class="swipe-in"><div class="row">
+        <input type="checkbox" data-goal-done="${g.id}" ${g.done?'checked':''} style="width:18px;height:18px">
+        <div class="grow" style="${g.done?'text-decoration:line-through;color:var(--muted)':''}">
+          ${escapeHtml(g.text)} <span style="font-size:13px;color:var(--muted)">截止 ${g.deadline}</span>
+          ${!g.done?` <span class="${leftCls}" style="font-size:13px">（剩 ${left} 天）</span>`:''}
+        </div>
+      </div></div>
+      <div class="swipe-del" data-goal-del="${g.id}">删除</div>
+    </div>`;
+  }).join('') || '<div class="empty-tip">还没设目标</div>';
+  const fmtVal = (f,v)=>{
+    if(f[2]==='s' && Number(v)>60){
+      const m = Math.floor(Number(v)/60), s = (Number(v)%60).toFixed(1).padStart(4,'0');
+      return `${f[1]} ${m}分${s}秒`;
+    }
+    return `${f[1]} ${v}${f[2]}`;
+  };
+  const recHtml = recs.map(r=>{
+    const parts = EVENT_FIELDS.filter(f=>r.metrics[f[0]]!=='' && r.metrics[f[0]]!=null)
+      .map(f=>fmtVal(f, r.metrics[f[0]])).join(' · ') || '（未填成绩）';
+    return `<div class="swipe">
+      <div class="swipe-in"><div class="tl-item">
+        <div class="tl-date">${r.date}</div>
+        <div>${parts}</div>
+        ${r.note?`<div style="font-size:13px;color:var(--muted)">${escapeHtml(r.note)}</div>`:''}
+      </div></div>
+      <div class="swipe-del" data-rec-del="${r.id}">删除</div>
+    </div>`;
+  }).join('') || '<div class="empty-tip">还没记过阶段数据</div>';
+  v.innerHTML = `
+    <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+      <button class="btn ghost small" id="ppl-back">‹ 返回名单</button>
+      <button class="btn danger small" id="ppl-del">删除此队员</button>
+    </div>
+    <div class="view-title">${escapeHtml(p.name)} <span class="tag athlete">队员</span></div>
+    <div class="view-sub">田径队员</div>
+    <div class="card">
+      <h3>档案</h3>
+      ${profileRows}
+      <div style="text-align:right"><button class="btn small" id="ed-save">保存档案</button></div>
+    </div>
+    <div class="card section-gap">
+      <h3>阶段目标 <button class="btn small" id="goal-add" style="float:right">＋ 加目标</button></h3>
+      ${goalHtml}
+    </div>
+    <div class="card section-gap">
+      <h3>阶段数据记录 <button class="btn small" id="rec-add" style="float:right">＋ 记一次</button></h3>
+      <div class="tl">${recHtml}</div>
+    </div>`;
+  v.querySelector('#ppl-back').onclick = ()=>navigate('people');
+  v.querySelector('#ppl-del').onclick = ()=>{
+    confirmDialog(`删除队员"${p.name}"？他的目标和阶段记录也会一起删掉。`, ()=>{
+      state.people = state.people.filter(x=>x.id!==p.id);
+      state.goals = state.goals.filter(g=>g.personId!==p.id);
+      state.stageRecords = state.stageRecords.filter(r=>r.personId!==p.id);
+      save(); toast('已删除'); navigate('people');
+    });
+  };
+  v.querySelector('#ed-save').onclick = ()=>{
+    p.athlete.group = document.getElementById('ed-group').value.trim();
+    p.athlete.specialty = document.getElementById('ed-spec').value.trim();
+    p.athlete.joinDate = document.getElementById('ed-jdate').value;
+    save(); toast('档案已保存');
+  };
+  v.querySelector('#goal-add').onclick = ()=>goalForm(id);
+  v.querySelector('#rec-add').onclick = ()=>recordForm(id);
+  v.querySelectorAll('[data-goal-done]').forEach(cb=>cb.onchange=()=>{
+    const g=state.goals.find(x=>x.id===cb.dataset.goalDone); g.done=cb.checked; save(); renderPerson(id);
+  });
+  v.querySelectorAll('[data-goal-del]').forEach(b=>b.onclick=()=>{
+    const g=state.goals.find(x=>x.id===b.dataset.goalDel);
+    confirmDialog(`删除目标"${g.text}"？`, ()=>{ state.goals=state.goals.filter(x=>x.id!==g.id); save(); renderPerson(id); toast('已删除'); });
+  });
+  v.querySelectorAll('[data-rec-del]').forEach(b=>b.onclick=()=>{
+    confirmDialog('删除这条阶段数据记录？', ()=>{
+      state.stageRecords = state.stageRecords.filter(x=>x.id!==b.dataset.recDel);
+      save(); renderPerson(id); toast('已删除');
+    });
+  });
+  bindSwipe(v);
+}
+function bindSwipe(root){
+  root.querySelectorAll('.swipe').forEach(w=>{
+    const inner = w.querySelector('.swipe-in');
+    let sx=0, sy=0, dx=0, dragging=false, open=false, pid=null;
+    inner.addEventListener('pointerdown', e=>{
+      sx=e.clientX; sy=e.clientY; dx=0; dragging=false; pid=e.pointerId;
+    });
+    function onMove(e){
+      if(!sx || e.pointerId!==pid) return;
+      const mx = e.clientX - sx, my = e.clientY - sy;
+      if(!dragging){
+        if(Math.abs(mx)<4 || Math.abs(my)>Math.abs(mx)) return;
+        dragging = true;
+        inner.style.transition='none';
+      }
+      dx = mx;
+      let x = open ? mx-76 : mx;
+      if(x>0) x=0; if(x<-76) x=-76;
+      inner.style.transform = `translateX(${x}px)`;
+      e.preventDefault();
+    }
+    function onUp(e){
+      if(!sx || e.pointerId!==pid) return;
+      if(dragging) open = dx < -12;
+      inner.style.transition='';
+      inner.style.transform = open ? 'translateX(-76px)' : '';
+      sx=0; dragging=false; pid=null;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    }
+    inner.addEventListener('pointerdown', e=>{
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+    inner.addEventListener('click', e=>{
+      if(open){ e.preventDefault(); e.stopPropagation(); open=false; inner.style.transform=''; }
+    }, true);
+  });
+}
+function goalForm(personId){
+  openModal(`
+    <h3>加阶段目标</h3>
+    <div class="field"><label>目标内容（必填）</label><input id="gf-text" placeholder="如：三个月内100米跑进13秒"></div>
+    <div class="field"><label>截止日期</label><input type="date" id="gf-deadline"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="gf-cancel">取消</button>
+      <button class="btn" id="gf-save">保存</button>
+    </div>`);
+  document.getElementById('gf-cancel').onclick=closeModal;
+  document.getElementById('gf-save').onclick=()=>{
+    const text=document.getElementById('gf-text').value.trim();
+    if(!text){ toast('目标内容不能为空'); return; }
+    state.goals.push({ id:uid(), personId, text, deadline:document.getElementById('gf-deadline').value||todayStr(), done:false });
+    save(); closeModal(); renderPerson(personId); toast('已保存');
+  };
+}
+// 专项字段：[字段名, 显示名, 单位, 方向 down=越小越好 up=越大越好]
+const EVENT_FIELDS = [
+  ['m30','30米','s','down'], ['m60','60米','s','down'], ['m80','80米','s','down'],
+  ['m100','100米','s','down'], ['m200','200米','s','down'], ['m400','400米','s','down'],
+  ['m800','800米','s','down'],
+  ['tripleJump','三级跳远','m','up'], ['shotPut','铅球','m','up']
+];
+function recordForm(personId){
+  const fields = EVENT_FIELDS.map(f=>`
+    <div class="field"><label>${f[1]}（${f[2]}）</label><input type="number" step="0.01" id="rf-${f[0]}"></div>`).join('');
+  openModal(`
+    <h3>记一次阶段数据</h3>
+    <div class="field"><label>日期</label><input type="date" id="rf-date" value="${todayStr()}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${fields}</div>
+    <div class="field"><label>备注</label><input id="rf-note" placeholder="一句话状态"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="rf-cancel">取消</button>
+      <button class="btn" id="rf-save">保存</button>
+    </div>`);
+  document.getElementById('rf-cancel').onclick=closeModal;
+  document.getElementById('rf-save').onclick=()=>{
+    const metrics = {};
+    EVENT_FIELDS.forEach(f=>{ metrics[f[0]] = document.getElementById('rf-'+f[0]).value; });
+    state.stageRecords.push({ id:uid(), personId, date:document.getElementById('rf-date').value||todayStr(),
+      metrics, note:document.getElementById('rf-note').value.trim() });
+    save(); closeModal(); renderPerson(personId); toast('已记录');
+  };
+}
+/* ================= 阶段4：阶段汇总页 ================= */
+function METRIC_DEF(){
+  const o = {};
+  EVENT_FIELDS.forEach(f=>{ o[f[0]] = { label:f[1], unit:f[2], dir:f[3] }; });
+  return o;
+}
+function comparePerson(recs){
+  // 对每个指标，各自找它最近出现的两次记录来对比
+  const sorted = recs.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const out = [];
+  const defs = METRIC_DEF();
+  for(const key of Object.keys(defs)){
+    const series = sorted.filter(r=>r.metrics && r.metrics[key]!=='' && r.metrics[key]!=null);
+    if(series.length<2) continue;
+    const prev = series[series.length-2], curr = series[series.length-1];
+    const a = parseFloat(prev.metrics[key]), b = parseFloat(curr.metrics[key]);
+    if(isNaN(a)||isNaN(b)) continue;
+    const def = defs[key];
+    let cls = 'flat';
+    if(b < a){ cls = (def.dir==='down') ? 'up' : 'down'; }
+    else if(b > a){ cls = (def.dir==='up') ? 'up' : 'down'; }
+    out.push(`${def.label} <span class="${cls}">${a}${def.unit}→${b}${def.unit}</span>`);
+  }
+  return out;
+}
+function renderStages(){
+  const v = document.getElementById('view-stages');
+  const rows = state.people.map(p=>{
+    const goals = state.goals.filter(g=>g.personId===p.id && !g.done);
+    const recs = state.stageRecords.filter(r=>r.personId===p.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const goalHtml = goals.length
+      ? goals.map(g=>{
+          const left = daysUntil(g.deadline);
+          const cls = left<=10 ? 'warn-text' : '';
+          return `<div style="font-size:13px"><span class="${cls}">${escapeHtml(g.text)}（剩 ${left} 天）</span></div>`;
+        }).join('')
+      : '<div style="font-size:13px;color:var(--muted)">无进行中目标</div>';
+    let cmp = '';
+    if(recs.length>=2){
+      cmp = `<div style="font-size:13px;color:var(--muted);margin-top:4px">最近对比：${comparePerson(recs).join('　') || '—'}</div>`;
+    } else if(recs.length===1){
+      cmp = '<div style="font-size:13px;color:var(--muted);margin-top:4px">只有一次记录，再记一次就能看对比</div>';
+    } else {
+      cmp = '<div style="font-size:13px;color:var(--muted);margin-top:4px">还没记过数据</div>';
+    }
+    return `<div class="row" data-person="${p.id}" style="cursor:pointer">
+      <div class="grow">
+        <div style="font-weight:600">${escapeHtml(p.name)} <span class="tag athlete">队员</span></div>
+        ${goalHtml}${cmp}
+      </div>
+    </div>`;
+  }).join('');
+  v.innerHTML = `
+    <div class="view-title">阶段与目标</div>
+    <div class="view-sub">谁的目标快到期、最近数据是进步还是退步，都在这里。点某个人进他的档案。</div>
+    <div style="margin-bottom:14px;text-align:right"><button class="btn" id="stg-add">＋ 记一次阶段数据</button></div>
+    <div class="card">${rows || '<div class="empty-tip">还没有人员，先去名单里加一个</div>'}</div>`;
+  v.querySelector('#stg-add').onclick = ()=>{
+    if(!state.people.length){ toast('先加一个人'); return; }
+    openModal(`
+      <h3>选一个人记数据</h3>
+      <div class="field"><label>选择人员</label>
+        <select id="sr-person">${state.people.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}（队员）</option>`).join('')}</select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="sr-cancel">取消</button>
+        <button class="btn" id="sr-next">下一步</button>
+      </div>`);
+    document.getElementById('sr-cancel').onclick=closeModal;
+    document.getElementById('sr-next').onclick=()=>{ closeModal(); recordForm(document.getElementById('sr-person').value); };
+  };
+  v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
+}
+/* ================= 阶段6：数据与设置 ================= */
+function renderSettings(){
+  const v = document.getElementById('view-settings');
+  v.innerHTML = `
+    <div class="view-title">数据与设置</div>
+    <div class="view-sub">你的所有数据只存在这台电脑的这个浏览器里。请定期导出备份。</div>
+    <div class="card" style="max-width:620px">
+      <h3>导出备份</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">把全部数据下载成一个文件存到电脑里，建议每月导一次。</p>
+      <button class="btn" id="btn-export">导出备份（.json）</button>
+    </div>
+    <div class="card section-gap" style="max-width:620px">
+      <h3>恢复备份</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">选择之前导出的备份文件。<span class="warn-text">这会覆盖现在的所有数据。</span></p>
+      <input type="file" id="import-file" accept=".json" style="font-size:13px">
+    </div>
+    <div class="card section-gap" style="max-width:620px">
+      <h3>清空重来</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">删除本机全部数据，回到空白状态。请先确认已导出备份。</p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="clear-input" placeholder="输入"清空"二字" style="width:160px;padding:8px 10px;border:1px solid var(--line);border-radius:6px">
+        <button class="btn danger" id="btn-clear" disabled>清空全部数据</button>
+      </div>
+    </div>
+    <div class="card section-gap" style="max-width:620px">
+      <h3>重要说明</h3>
+      <p style="font-size:13px;color:var(--muted);line-height:1.9">
+        1. 这个 App 不联网、不登录，数据只保存在当前电脑的这个浏览器里。<br>
+        2. 别清理浏览器缓存、别换浏览器打开，否则数据会丢。<br>
+        3. 建议每月点一次"导出备份"，把文件存到电脑上或微信文件传输助手。
+      </p>
+    </div>`;
+  v.querySelector('#btn-export').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '工作台备份-' + todayStr() + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('已导出备份');
+  };
+  v.querySelector('#import-file').onchange = e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      let data;
+      try{ data = JSON.parse(reader.result); }
+      catch(err){ toast('文件格式不对，导入失败'); return; }
+      confirmDialog('恢复备份会覆盖当前所有数据，确定继续？', ()=>{
+        state = Object.assign(defaultState(), data);
+        save(); location.reload();
+      });
+    };
+    reader.readAsText(f);
+  };
+  const ci = v.querySelector('#clear-input');
+  const cb = v.querySelector('#btn-clear');
+  ci.oninput = ()=>{ cb.disabled = (ci.value.trim()!=='清空'); };
+  cb.onclick = ()=>{
+    confirmDialog('将删除本机全部数据且不可恢复，确定？', ()=>{
+      localStorage.removeItem(STORE_KEY);
+      location.reload();
+    });
+  };
+}
+
+/* ================= 启动 ================= */
+state = load();
+(function init(){
+  const d = new Date();
+  const week = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  document.getElementById('top-date').textContent =
+    d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + week;
+  document.getElementById('btn-save').onclick = ()=>{ save(); toast('已手动保存'); };
+  navigate('home');
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
