@@ -110,7 +110,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .cal-dow{text-align:center;font-size:12px;color:var(--muted);padding:6px 0}
 .cal-cell{
-  min-height:86px;border:1px solid var(--line);border-radius:6px;background:var(--card);
+  min-height:130px;border:1px solid var(--line);border-radius:6px;background:var(--card);
   padding:6px;font-size:13px;cursor:pointer;overflow:hidden;
 }
 .cal-cell:hover{border-color:var(--ink)}
@@ -296,7 +296,7 @@ function renderHome(){
     <div class="row">
       <input type="checkbox" data-hp-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px">
       <div class="grow" style="${p.done?'text-decoration:line-through;color:var(--muted)':''}">
-        ${escapeHtml(p.title)} <span style="font-size:13px;color:var(--muted)">${escapeHtml(p.time||'')} · ${typeLabel(p.type)}</span>
+        ${escapeHtml(p.title)} <span style="font-size:13px;color:var(--muted)">${escapeHtml(p.time||'')}</span>
       </div>
     </div>`;
   const overdueHtml = overdue.length
@@ -385,22 +385,25 @@ function renderCalendar(){
     cells += `<div class="${cls}" data-date="${iso||''}"><div class="d">${label}</div>${cnt?`<div class="mark">${cnt} 件事</div>`:''}</div>`;
   }
   const dayPlans = state.plans.filter(p=>p.date===selDate).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
-  const peopleById = Object.fromEntries(state.people.map(p=>[p.id,p.name]));
   let listHtml;
   if(!dayPlans.length) listHtml='<div class="empty-tip">这一天还没安排，点下面按钮加一条</div>';
-  else listHtml = dayPlans.map(p=>{
-    const rel = p.peopleIds.map(id=>peopleById[id]||'').filter(Boolean).join('、');
-    return `<div class="row">
-      <input type="checkbox" data-plan-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px">
-      <div class="grow" style="${p.done?'text-decoration:line-through;color:var(--muted)':''}">
-        <div style="font-weight:600">${escapeHtml(p.title)} <span style="font-weight:400;color:var(--muted);font-size:13px">${escapeHtml(p.time||'')} · ${typeLabel(p.type)}</span></div>
-        ${rel?`<div style="font-size:13px;color:var(--muted)">相关：${escapeHtml(rel)}</div>`:''}
-        ${p.note?`<div style="font-size:13px;color:var(--muted)">${escapeHtml(p.note)}</div>`:''}
-      </div>
-      <button class="btn ghost small" data-plan-edit="${p.id}">改</button>
-      <button class="btn ghost small" data-plan-del="${p.id}">删</button>
-    </div>`;
-  }).join('');
+  else listHtml = `<table style="width:100%;table-layout:fixed;border-collapse:fixed">
+    <colgroup><col style="width:90px"><col><col style="width:60px"><col style="width:120px"></colgroup>
+    <tr style="text-align:left;color:var(--muted);font-size:13px">
+      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">时间</th>
+      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">计划</th>
+      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">完成</th>
+      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">操作</th>
+    </tr>` +
+    dayPlans.map(p=>`<tr>
+      <td style="padding:9px 4px;border-bottom:1px solid var(--line)">${escapeHtml(p.time||'')}</td>
+      <td style="padding:9px 4px;border-bottom:1px solid var(--line);${p.done?'text-decoration:line-through;color:var(--muted)':''}">${escapeHtml(p.title)}</td>
+      <td style="padding:9px 4px;border-bottom:1px solid var(--line)"><input type="checkbox" data-plan-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px"></td>
+      <td style="padding:9px 4px;border-bottom:1px solid var(--line)">
+        <button class="btn ghost small" data-plan-edit="${p.id}">改</button>
+        <button class="btn ghost small" data-plan-del="${p.id}">删</button>
+      </td>
+    </tr>`).join('') + `</table>`;
   v.innerHTML = `
     <div class="view-title">计划日期</div>
     <div class="view-sub">点格子选一天，再安排当天的事。首页"今日计划"会自动取今天的安排。</div>
@@ -439,39 +442,24 @@ function typeLabel(t){ return ({work:'工作',training:'训练',life:'生活'})[
 function planForm(plan){
   const isEdit = !!plan;
   plan = plan || { date:selDate, time:'', title:'', type:'work', peopleIds:[], note:'', done:false };
-  const peopleOpts = state.people.map(p=>
-    `<label style="display:inline-flex;gap:6px;align-items:center;margin-right:14px;font-size:14px;cursor:pointer">
-       <input type="checkbox" value="${p.id}" ${plan.peopleIds.includes(p.id)?'checked':''} class="ppl-cb"> ${escapeHtml(p.name)}
-     </label>`).join('') || '<span style="color:var(--muted);font-size:13px">还没有人员，可稍后在名单里加</span>';
   openModal(`
     <h3>${isEdit?'改计划':'加计划'}</h3>
     <div class="field"><label>日期</label><input type="date" id="f-date" value="${plan.date}"></div>
-    <div class="field"><label>标题（必填）</label><input id="f-title" value="${escapeHtml(plan.title)}" placeholder="如：下午带短跑组跑间歇"></div>
-    <div class="form-row">
-      <div class="field"><label>时间</label><input type="time" id="f-time" value="${plan.time}"></div>
-      <div class="field"><label>类型</label>
-        <select id="f-type">
-          <option value="work" ${plan.type==='work'?'selected':''}>工作</option>
-          <option value="training" ${plan.type==='training'?'selected':''}>训练</option>
-          <option value="life" ${plan.type==='life'?'selected':''}>生活</option>
-        </select></div>
-    </div>
-    <div class="field"><label>关联人员（可多选）</label>${peopleOpts}</div>
-    <div class="field"><label>备注</label><textarea id="f-note" rows="2">${escapeHtml(plan.note)}</textarea></div>
+    <div class="field"><label>时间</label><input type="time" id="f-time" value="${plan.time}"></div>
+    <div class="field"><label>计划（必填）</label><textarea id="f-plan" rows="3" placeholder="如：下午带短跑组跑间歇">${escapeHtml(plan.title)}</textarea></div>
     <div class="modal-actions">
       <button class="btn ghost" id="pf-cancel">取消</button>
       <button class="btn" id="pf-save">保存</button>
     </div>`);
   document.getElementById('pf-cancel').onclick=closeModal;
   document.getElementById('pf-save').onclick=()=>{
-    const title = document.getElementById('f-title').value.trim();
-    if(!title){ toast('标题不能为空'); return; }
+    const text = document.getElementById('f-plan').value.trim();
+    if(!text){ toast('计划内容不能为空'); return; }
     plan.date = document.getElementById('f-date').value || plan.date;
     plan.time = document.getElementById('f-time').value;
-    plan.title = title;
-    plan.type = document.getElementById('f-type').value;
-    plan.note = document.getElementById('f-note').value.trim();
-    plan.peopleIds = [...document.querySelectorAll('.ppl-cb:checked')].map(c=>c.value);
+    plan.title = text;
+    plan.note = '';
+    plan.peopleIds = [];
     if(!isEdit){ plan.id=uid(); state.plans.push(plan); }
     save(); closeModal(); selDate=plan.date; renderCalendar(); toast('已保存');
   };
