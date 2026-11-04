@@ -559,7 +559,7 @@ function personStatusDot(person){
 }
 function renderPeople(){
   const v = document.getElementById('view-people');
-  let list = state.people.slice();
+  let list = state.people.slice().sort((a,b)=>a.name.localeCompare(b.name,'zh'));
   if(peopleQuery) list = list.filter(p=>p.name.includes(peopleQuery));
   const rows = list.map(p=>{
     const key = `主项：${escapeHtml((p.athlete&&p.athlete.specialty)||'—')}`;
