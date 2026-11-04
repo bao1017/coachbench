@@ -92,7 +92,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .tag.athlete{background:#DCE8DC;color:#2F5A38}
 .swipe{position:relative;overflow:hidden;border-radius:8px;background:transparent}
 .swipe-in{transition:transform .2s ease;background:var(--card);position:relative;z-index:1;touch-action:pan-y;user-select:none;width:100%;box-sizing:border-box}
-.swipe-del{position:absolute;top:0;left:100%;width:76px;background:#b23a2e;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:0;transition:transform .2s ease;transform:translateX(0)}
+.swipe-del{position:absolute;top:0;right:0;bottom:0;width:76px;background:#b23a2e;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;z-index:0}
 .dot-status{width:9px;height:9px;border-radius:50%;background:#C9C4B4;flex:none}
 .dot-status.hot{background:var(--cinnabar)}
 .dot-status.ok{background:var(--pine)}
@@ -648,7 +648,7 @@ function bindSwipe(root){
       if(!sx) return;
       const mx = e.clientX - sx, my = e.clientY - sy;
       if(!dragging){
-        if(Math.abs(mx)<6 || Math.abs(my)>Math.abs(mx)) return; // 竖滑/点击不接管
+        if(Math.abs(mx)<4 || Math.abs(my)>Math.abs(mx)) return; // 竖滑/点击不接管
         dragging = true;
       }
       dx = mx;
@@ -658,7 +658,7 @@ function bindSwipe(root){
     });
     const end = ()=>{
       if(!sx) return;
-      if(dragging) open = dx < -36;
+      if(dragging) open = dx < -12;
       inner.style.transition='';
       inner.style.transform = open ? 'translateX(-76px)' : '';
       sx=0; dragging=false;
