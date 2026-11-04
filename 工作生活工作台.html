@@ -233,6 +233,43 @@ input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
 .empty-tip{color:var(--muted);font-size:14px;padding:18px 0;text-align:center}
 .warn-text{color:var(--cinnabar)}
 .section-gap{margin-top:22px}
+
+/* ============ 手机端适配 ============ */
+@media(max-width:768px){
+  #app{grid-template-columns:1fr;grid-template-rows:52px 1fr 64px;height:100vh;height:100dvh}
+  #topbar{padding:0 14px;grid-column:1/2}
+  #brand{font-size:15px}
+  #top-right{gap:10px;font-size:12px}
+  #top-date{display:none}
+  #sidebar{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    flex-direction:row;padding:6px 4px;gap:2px;
+    background:rgba(20,26,48,.85);backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,.15);border-right:none;
+  }
+  .nav-item{flex:1;flex-direction:column;gap:3px;padding:6px 2px;font-size:10px;border-radius:10px;text-align:center}
+  .nav-item svg{width:20px;height:20px}
+  .nav-divider{display:none}
+  #nav-settings{margin-top:0}
+  #main{padding:16px 14px 80px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .view{max-width:100%}
+  .view-title{font-size:20px}
+  .view-sub{margin-bottom:14px}
+  .card{padding:14px 14px;border-radius:14px}
+  .stat-cell{padding:14px 12px}
+  .stat-num{font-size:24px}
+  #main .card > div[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:1fr !important}
+  .cal-grid{gap:4px}
+  .cal-cell{min-height:84px;font-size:12px;padding:4px}
+  .cal-head{flex-wrap:wrap;gap:8px}
+  .cal-head h3{font-size:15px}
+  .form-row{grid-template-columns:1fr}
+  #overlay{padding:0;align-items:stretch}
+  #modal{width:100vw;height:100dvh;max-width:none;border-radius:0;padding:20px 16px;overflow-y:auto}
+  .row{padding:10px 2px}
+  .btn{padding:10px 16px}
+  input,button,select,textarea{font-size:16px !important} /* 防 iOS 自动放大 */
+}
 </style>
 </head>
 <body>
