@@ -299,7 +299,7 @@ function renderHome(){
   const planRow = p => `
     <div class="row" style="padding:6px 0">
       <div class="grow">
-        <span class="tag ${p.group==='injured'?'student':'athlete'}" style="margin-right:6px">${p.group==='injured'?'伤病':'正常'}</span>${escapeHtml(p.title)}
+        ${p.group==='injured'?'<span class="tag student" style="margin-right:6px">伤病</span>':''}${escapeHtml(p.title)}
       </div>
     </div>`;
   const overdueHtml = '';
