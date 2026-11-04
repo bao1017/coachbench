@@ -646,9 +646,16 @@ function renderPerson(id){
       <div class="swipe-del" data-goal-del="${g.id}">删除</div>
     </div>`;
   }).join('') || '<div class="empty-tip">还没设目标</div>';
+  const fmtVal = (f,v)=>{
+    if(f[2]==='s' && Number(v)>60){
+      const m = Math.floor(Number(v)/60), s = (Number(v)%60).toFixed(1).padStart(4,'0');
+      return `${f[1]} ${m}分${s}秒`;
+    }
+    return `${f[1]} ${v}${f[2]}`;
+  };
   const recHtml = recs.map(r=>{
     const parts = EVENT_FIELDS.filter(f=>r.metrics[f[0]]!=='' && r.metrics[f[0]]!=null)
-      .map(f=>`${f[1]} ${r.metrics[f[0]]}${f[2]}`).join(' · ') || '（未填成绩）';
+      .map(f=>fmtVal(f, r.metrics[f[0]])).join(' · ') || '（未填成绩）';
     return `<div class="swipe">
       <div class="swipe-in"><div class="tl-item">
         <div class="tl-date">${r.date}</div>
