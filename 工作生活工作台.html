@@ -162,6 +162,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
     <div id="brand">我的工作台</div>
     <div id="top-right">
       <span id="top-date"></span>
+      <button class="btn small ghost" id="btn-save" style="border-color:var(--line)">手动保存</button>
       <span id="save-status"><span class="dot"></span>已自动保存</span>
     </div>
   </div>
@@ -899,6 +900,7 @@ state = load();
   const week = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
   document.getElementById('top-date').textContent =
     d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + week;
+  document.getElementById('btn-save').onclick = ()=>{ save(); toast('已手动保存'); };
   navigate('home');
 })();
 </script>
