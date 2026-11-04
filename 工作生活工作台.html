@@ -383,29 +383,9 @@ function renderCalendar(){
     const cnt = iso ? state.plans.filter(p=>p.date===iso).length : 0;
     cells += `<div class="${cls}" data-date="${iso||''}"><div class="d">${label}</div>${cnt?`<div class="mark">${cnt} 件事</div>`:''}</div>`;
   }
-  const dayPlans = state.plans.filter(p=>p.date===selDate).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
-  let listHtml;
-  if(!dayPlans.length) listHtml='<div class="empty-tip">这一天还没安排，点下面按钮加一条</div>';
-  else listHtml = `<table style="width:100%;table-layout:fixed;border-collapse:fixed">
-    <colgroup><col style="width:90px"><col><col style="width:60px"><col style="width:120px"></colgroup>
-    <tr style="text-align:left;color:var(--muted);font-size:13px">
-      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">时间</th>
-      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">计划</th>
-      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">完成</th>
-      <th style="padding:6px 4px;border-bottom:1px solid var(--line)">操作</th>
-    </tr>` +
-    dayPlans.map(p=>`<tr>
-      <td style="padding:9px 4px;border-bottom:1px solid var(--line)">${escapeHtml(p.time||'')}</td>
-      <td style="padding:9px 4px;border-bottom:1px solid var(--line);${p.done?'text-decoration:line-through;color:var(--muted)':''}">${escapeHtml(p.title)}</td>
-      <td style="padding:9px 4px;border-bottom:1px solid var(--line)"><input type="checkbox" data-plan-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px"></td>
-      <td style="padding:9px 4px;border-bottom:1px solid var(--line)">
-        <button class="btn ghost small" data-plan-edit="${p.id}">改</button>
-        <button class="btn ghost small" data-plan-del="${p.id}">删</button>
-      </td>
-    </tr>`).join('') + `</table>`;
   v.innerHTML = `
     <div class="view-title">计划日期</div>
-    <div class="view-sub">点格子选一天，再安排当天的事。首页"今日计划"会自动取今天的安排。</div>
+    <div class="view-sub">点任意一天，弹出当天的计划表格，直接在表里填内容、次数、组数、强度。</div>
     <div class="cal-head">
       <div class="cal-nav">
         <button class="btn ghost small" id="cal-prev">‹ 上月</button>
@@ -413,54 +393,78 @@ function renderCalendar(){
         <button class="btn ghost small" id="cal-next">下月 ›</button>
         <button class="btn ghost small" id="cal-today">回到今天</button>
       </div>
-      <button class="btn" id="plan-add">＋ 给 ${selDate.slice(5).replace('-','/')} 加计划</button>
+      <button class="btn" id="plan-add">＋ 编辑 ${selDate.slice(5).replace('-','/')} 的计划</button>
     </div>
-    <div class="cal-grid">${cells}</div>
-    <div class="card section-gap">
-      <h3>${selDate} 的安排</h3>
-      ${listHtml}
-    </div>`;
+    <div class="cal-grid">${cells}</div>`;
   // 事件
   document.getElementById('cal-prev').onclick=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); };
   document.getElementById('cal-next').onclick=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); };
   document.getElementById('cal-today').onclick=()=>{ const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth(); selDate=todayStr(); renderCalendar(); };
   v.querySelectorAll('.cal-cell[data-date]').forEach(c=>{
-    c.onclick=()=>{ selDate=c.dataset.date; renderCalendar(); };
+    c.onclick=()=>{ selDate=c.dataset.date; renderCalendar(); planTableForm(selDate); };
   });
-  document.getElementById('plan-add').onclick=()=>planForm(null);
-  v.querySelectorAll('[data-plan-done]').forEach(cb=>cb.onchange=()=>{
-    const p=state.plans.find(x=>x.id===cb.dataset.planDone); p.done=cb.checked; save(); renderCalendar();
-  });
-  v.querySelectorAll('[data-plan-edit]').forEach(b=>b.onclick=()=>planForm(state.plans.find(x=>x.id===b.dataset.planEdit)));
-  v.querySelectorAll('[data-plan-del]').forEach(b=>b.onclick=()=>{
-    const p=state.plans.find(x=>x.id===b.dataset.planDel);
-    confirmDialog(`删除计划"${p.title}"？`, ()=>{ state.plans=state.plans.filter(x=>x.id!==p.id); save(); renderCalendar(); toast('已删除'); });
-  });
+  document.getElementById('plan-add').onclick=()=>planTableForm(selDate);
 }
 function typeLabel(t){ return ({work:'工作',training:'训练',life:'生活'})[t]||'工作'; }
-function planForm(plan){
-  const isEdit = !!plan;
-  plan = plan || { date:selDate, time:'', title:'', type:'work', peopleIds:[], note:'', done:false };
+function planTableForm(dateStr){
+  let rows = state.plans.filter(p=>p.date===dateStr)
+    .map(p=>({content:p.title, reps:p.reps||'', sets:p.sets||'', intensity:p.intensity||'', done:!!p.done}));
+  if(!rows.length) rows = [{content:'',reps:'',sets:'',intensity:'',done:false}];
   openModal(`
-    <h3>${isEdit?'改计划':'加计划'}</h3>
-    <div class="field"><label>日期</label><input type="date" id="f-date" value="${plan.date}"></div>
-    <div class="field"><label>时间</label><input type="time" id="f-time" value="${plan.time}"></div>
-    <div class="field"><label>计划（必填）</label><textarea id="f-plan" rows="3" placeholder="如：下午带短跑组跑间歇">${escapeHtml(plan.title)}</textarea></div>
+    <h3>${dateStr} 训练计划</h3>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+      <thead><tr style="text-align:left;color:var(--muted);font-size:13px">
+        <th style="width:36px;padding:6px 4px">#</th>
+        <th style="padding:6px 4px">内容</th>
+        <th style="width:80px;padding:6px 4px">次数</th>
+        <th style="width:70px;padding:6px 4px">组数</th>
+        <th style="width:90px;padding:6px 4px">强度</th>
+        <th style="width:50px"></th>
+      </tr></thead>
+      <tbody id="pt-body"></tbody>
+    </table>
+    <button class="btn ghost small" id="pt-addrow" style="margin:10px 0">＋ 加一行</button>
     <div class="modal-actions">
       <button class="btn ghost" id="pf-cancel">取消</button>
       <button class="btn" id="pf-save">保存</button>
     </div>`);
+  function syncFromDom(){
+    document.querySelectorAll('#pt-body tr').forEach((tr,i)=>{
+      rows[i].content = tr.querySelector('.pt-c').value;
+      rows[i].reps = tr.querySelector('.pt-r').value;
+      rows[i].sets = tr.querySelector('.pt-s').value;
+      rows[i].intensity = tr.querySelector('.pt-i').value;
+    });
+  }
+  function drawRows(){
+    document.getElementById('pt-body').innerHTML = rows.map((r,i)=>`
+      <tr>
+        <td style="padding:4px">${i+1}</td>
+        <td style="padding:4px"><input class="pt-c" value="${escapeHtml(r.content)}" style="width:100%"></td>
+        <td style="padding:4px"><input class="pt-r" value="${escapeHtml(r.reps)}" style="width:100%"></td>
+        <td style="padding:4px"><input class="pt-s" value="${escapeHtml(r.sets)}" style="width:100%"></td>
+        <td style="padding:4px"><input class="pt-i" value="${escapeHtml(r.intensity)}" style="width:100%"></td>
+        <td style="padding:4px"><button class="btn ghost small pt-del" data-i="${i}">删</button></td>
+      </tr>`).join('');
+    document.querySelectorAll('.pt-del').forEach(b=>b.onclick=()=>{
+      syncFromDom(); rows.splice(Number(b.dataset.i),1); drawRows();
+    });
+  }
+  drawRows();
+  document.getElementById('pt-addrow').onclick=()=>{
+    syncFromDom(); rows.push({content:'',reps:'',sets:'',intensity:'',done:false}); drawRows();
+  };
   document.getElementById('pf-cancel').onclick=closeModal;
   document.getElementById('pf-save').onclick=()=>{
-    const text = document.getElementById('f-plan').value.trim();
-    if(!text){ toast('计划内容不能为空'); return; }
-    plan.date = document.getElementById('f-date').value || plan.date;
-    plan.time = document.getElementById('f-time').value;
-    plan.title = text;
-    plan.note = '';
-    plan.peopleIds = [];
-    if(!isEdit){ plan.id=uid(); state.plans.push(plan); }
-    save(); closeModal(); selDate=plan.date; renderCalendar(); toast('已保存');
+    syncFromDom();
+    const kept = new Map(state.plans.filter(p=>p.date===dateStr).map(p=>[p.title, p.done]));
+    state.plans = state.plans.filter(p=>p.date!==dateStr);
+    rows.filter(r=>r.content.trim()).forEach(r=>{
+      state.plans.push({ id:uid(), date:dateStr, time:'', title:r.content.trim(),
+        reps:r.reps.trim(), sets:r.sets.trim(), intensity:r.intensity.trim(),
+        type:'work', peopleIds:[], note:'', done: !!kept.get(r.content.trim()) });
+    });
+    save(); closeModal(); renderCalendar(); toast('已保存');
   };
 }
 /* ================= 阶段3：人员名单 + 专属页 ================= */
