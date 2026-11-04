@@ -570,7 +570,6 @@ function renderPeople(){
         <div style="font-size:13px;color:var(--muted)">${key}</div>
       </div>
       <span class="${personStatusDot(p)}" title="目标状态"></span>
-      <button class="btn ghost small" data-person-del="${p.id}">删</button>
     </div>`;
   }).join('');
   v.innerHTML = `
@@ -587,16 +586,6 @@ function renderPeople(){
     document.querySelector('#ppl-q').focus(); document.querySelector('#ppl-q').setSelectionRange(99,99); };
   v.querySelector('#ppl-add').onclick = ()=>personForm(null);
   v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
-  v.querySelectorAll('[data-person-del]').forEach(b=>b.onclick=(e)=>{
-    e.stopPropagation();
-    const p = state.people.find(x=>x.id===b.dataset.personDel);
-    confirmDialog(`删除队员"${p.name}"？他的目标和阶段记录也会一起删掉。`, ()=>{
-      state.people = state.people.filter(x=>x.id!==p.id);
-      state.goals = state.goals.filter(g=>g.personId!==p.id);
-      state.stageRecords = state.stageRecords.filter(r=>r.personId!==p.id);
-      save(); renderPeople(); toast('已删除');
-    });
-  });
 }
 function personForm(p){
   const isEdit = !!p;
@@ -670,7 +659,10 @@ function renderPerson(id){
     </div>`;
   }).join('') || '<div class="empty-tip">还没记过阶段数据</div>';
   v.innerHTML = `
-    <div style="margin-bottom:10px"><button class="btn ghost small" id="ppl-back">‹ 返回名单</button></div>
+    <div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+      <button class="btn ghost small" id="ppl-back">‹ 返回名单</button>
+      <button class="btn danger small" id="ppl-del">删除此队员</button>
+    </div>
     <div class="view-title">${escapeHtml(p.name)} <span class="tag athlete">队员</span></div>
     <div class="view-sub">田径队员</div>
     <div class="card">
@@ -687,6 +679,14 @@ function renderPerson(id){
       <div class="tl">${recHtml}</div>
     </div>`;
   v.querySelector('#ppl-back').onclick = ()=>navigate('people');
+  v.querySelector('#ppl-del').onclick = ()=>{
+    confirmDialog(`删除队员"${p.name}"？他的目标和阶段记录也会一起删掉。`, ()=>{
+      state.people = state.people.filter(x=>x.id!==p.id);
+      state.goals = state.goals.filter(g=>g.personId!==p.id);
+      state.stageRecords = state.stageRecords.filter(r=>r.personId!==p.id);
+      save(); toast('已删除'); navigate('people');
+    });
+  };
   v.querySelector('#ed-save').onclick = ()=>{
     p.athlete.group = document.getElementById('ed-group').value.trim();
     p.athlete.specialty = document.getElementById('ed-spec').value.trim();
