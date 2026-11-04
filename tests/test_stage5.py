@@ -32,10 +32,11 @@ def main():
         assert pg.is_visible("text=今天带训练"), "首页没显示今天的计划"
         # 逾期
         assert pg.is_visible("text=昨天忘了的事"), "逾期计划没显示"
-        # 摘要格：今天未完成 1、课时不足 1
+        # 摘要格：今天未完成 1、本周已测 0、在册人数 1
         nums = pg.locator(".stat-num").all_inner_texts()
         assert nums[0].strip()=="1", f"今日未完成数不对: {nums}"
-        assert nums[1].strip()=="1", f"课时不足人数不对: {nums}"
+        assert nums[1].strip()=="0", f"本周已测人数不对: {nums}"
+        assert nums[2].strip()=="1", f"在册人数不对: {nums}"
 
         # 备忘：输入回车贴上
         pg.fill("#memo-input", "下午给家长回电话")

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""阶段4测试：阶段汇总页的目标倒计时、最近两次数据对比（进步绿/退步红）"""
+"""阶段4测试：阶段汇总页的目标倒计时、最近两次数据对比（进步绿/退步红）——新专项字段"""
 import sys, datetime
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -18,39 +18,28 @@ def main():
 
         today = datetime.date.today()
         d1 = (today - datetime.timedelta(days=30)).isoformat()
-        d2 = today.isoformat()
+        d2 = (today - datetime.timedelta(days=10)).isoformat()
+        d3 = today.isoformat()
         soon = (today + datetime.timedelta(days=5)).isoformat()
 
-        # 造数据：一个队员，两次100米（13.5→13.2 进步），一个5天后到期的目标
         pg.evaluate(f"""
-          state.people.push({{id:'p1', kind:'athlete', name:'李强', athlete:{{group:'甲组', specialty:'短跑'}}}});
-          state.stageRecords.push({{id:'r1', personId:'p1', date:'{d1}', metrics:{{sprint100:13.5, squat:100}}}});
-          state.stageRecords.push({{id:'r2', personId:'p1', date:'{d2}', metrics:{{sprint100:13.2, squat:105}}}});
+          state.people.push({{id:'p1', kind:'athlete', name:'李强', athlete:{{}}}});
+          state.stageRecords.push({{id:'r1', personId:'p1', date:'{d1}', metrics:{{m100:13.5, shotPut:11}}}});
+          state.stageRecords.push({{id:'r2', personId:'p1', date:'{d2}', metrics:{{m100:13.2, shotPut:12}}}});
+          state.stageRecords.push({{id:'r3', personId:'p1', date:'{d3}', metrics:{{m100:13.8}}}});
           state.goals.push({{id:'g1', personId:'p1', text:'100米进13秒', deadline:'{soon}', done:false}});
           save();
         """)
         pg.reload(); pg.wait_for_timeout(300)
-
         pg.click('.nav-item[data-view="stages"]'); pg.wait_for_timeout(200)
         row = pg.locator('[data-person="p1"]')
-        assert row.count()==1, "汇总页没有李强这一行"
-        # 目标剩5天 → warn-text
-        assert row.locator(".warn-text").count()==1, "5天后到期的目标没标红"
-        # 100米 13.5→13.2 进步 → up 类
-        up = row.locator("span.up")
-        assert up.count() >= 1, "进步项没标绿"
+        assert row.locator(".warn-text").count() == 1, "5天内到期目标没标红"
         txt = row.inner_text()
-        assert "13.5s→13.2s" in txt.replace(" ",""), f"对比数字没出现: {txt}"
-
-        # 退步场景：体重 75→78（dir down，变大=退步红）
-        pg.evaluate(f"""
-          state.stageRecords.push({{id:'r3', personId:'p1', date:'{d2}', metrics:{{weight:75}}}});
-          state.stageRecords.push({{id:'r4', personId:'p1', date:'{d2}', metrics:{{weight:78}}}});
-          save();
-        """)
-        pg.reload(); pg.wait_for_timeout(300)
-        pg.click('.nav-item[data-view="stages"]'); pg.wait_for_timeout(200)
-        assert pg.locator('[data-person="p1"] span.down').count() >= 1, "体重上升（退步）没标红"
+        # m100 最近两次 13.2→13.8 退步红
+        assert row.locator("span.down").count() >= 1, "m100 变慢没标红"
+        # 铅球 11→12 进步绿
+        assert row.locator("span.up").count() >= 1, "铅球进步没标绿"
+        assert "13.2s→13.8s" in txt.replace(" ",""), txt
 
         pg.evaluate("localStorage.removeItem('coachbench-v1');")
         assert not errors, f"控制台报错: {errors}"

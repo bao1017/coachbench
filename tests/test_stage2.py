@@ -26,8 +26,8 @@ def main():
         pg.wait_for_timeout(150)
         today = datetime.date.today().isoformat()
         pg.fill("#f-date", today)
-        pg.fill("#f-title", "下午带短跑组跑间歇")
-        pg.select_option("#f-type", "training")
+        pg.fill("#f-time", "16:00")
+        pg.fill("#f-plan", "下午带短跑组跑间歇")
         pg.click("#pf-save")
         pg.wait_for_timeout(200)
         assert pg.is_visible(f'text=下午带短跑组跑间歇'), "新加的计划没出现在当天列表"

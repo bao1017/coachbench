@@ -476,16 +476,13 @@ function personStatusDot(person){
 function renderPeople(){
   const v = document.getElementById('view-people');
   let list = state.people.slice();
-  if(peopleFilter!=='all') list = list.filter(p=>p.kind===peopleFilter);
   if(peopleQuery) list = list.filter(p=>p.name.includes(peopleQuery));
   const rows = list.map(p=>{
-    const key = p.kind==='student'
-      ? `剩 ${p.student.remainingClasses} 节课`
-      : `主项：${escapeHtml(p.athlete.specialty||'—')}`;
+    const key = `主项：${escapeHtml((p.athlete&&p.athlete.specialty)||'—')}`;
     return `<div class="row" data-person="${p.id}" style="cursor:pointer">
       <div class="grow">
         <div style="font-weight:600">${escapeHtml(p.name)}
-          <span class="tag ${p.kind}">${p.kind==='student'?'学员':'队员'}</span></div>
+          <span class="tag athlete">队员</span></div>
         <div style="font-size:13px;color:var(--muted)">${key}</div>
       </div>
       <span class="${personStatusDot(p)}" title="目标状态"></span>
@@ -493,96 +490,46 @@ function renderPeople(){
   }).join('');
   v.innerHTML = `
     <div class="view-title">人员名单</div>
-    <div class="view-sub">学员和队员都在这里，点名字看他的档案、目标和阶段记录。</div>
+    <div class="view-sub">队员都在这里，点名字看他的档案、目标和阶段记录。</div>
     <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
       <input id="ppl-q" placeholder="搜索姓名…" value="${escapeHtml(peopleQuery)}" style="padding:8px 12px;border:1px solid var(--line);border-radius:6px;width:200px">
-      <button class="btn ghost small filter-btn" data-f="all">全部</button>
-      <button class="btn ghost small filter-btn" data-f="student">学员</button>
-      <button class="btn ghost small filter-btn" data-f="athlete">队员</button>
       <span style="flex:1"></span>
       <button class="btn" id="ppl-add">＋ 加人</button>
     </div>
-    <div class="card">${rows || '<div class="empty-tip">还没有人。点右上角"加人"，加第一个学员或队员。</div>'}</div>`;
+    <div class="card">${rows || '<div class="empty-tip">还没有人。点右上角"加人"，加第一个队员。</div>'}</div>`;
   // 事件
   v.querySelector('#ppl-q').oninput = e=>{ peopleQuery=e.target.value.trim(); renderPeople();
     document.querySelector('#ppl-q').focus(); document.querySelector('#ppl-q').setSelectionRange(99,99); };
-  v.querySelectorAll('.filter-btn').forEach(b=>{
-    if(b.dataset.f===peopleFilter) b.classList.add('active');
-    b.onclick=()=>{ peopleFilter=b.dataset.f; renderPeople(); };
-  });
   v.querySelector('#ppl-add').onclick = ()=>personForm(null);
   v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
 }
 function personForm(p){
   const isEdit = !!p;
-  p = p || { kind:'student', name:'', createdAt:todayStr() };
+  p = p || { kind:'athlete', name:'', athlete:{}, createdAt:todayStr() };
+  const a = p.athlete || {};
   openModal(`
     <h3>${isEdit?'改档案':'加人'}</h3>
-    <div class="field"><label>身份</label>
-      <select id="pf-kind" ${isEdit?'disabled':''}>
-        <option value="student" ${p.kind==='student'?'selected':''}>学员（体培学生）</option>
-        <option value="athlete" ${p.kind==='athlete'?'selected':''}>队员（田径训练生）</option>
-      </select></div>
     <div class="field"><label>姓名（必填）</label><input id="pf-name" value="${escapeHtml(p.name)}"></div>
-    <div class="ppl-stu">
-      <div class="form-row">
-        <div class="field"><label>年龄</label><input id="pf-age" value="${p.student?p.student.age:''}"></div>
-        <div class="field"><label>家长电话</label><input id="pf-phone" value="${p.student?escapeHtml(p.student.parentPhone):''}"></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>报名项目</label><input id="pf-project" value="${p.student?escapeHtml(p.student.project):''}"></div>
-        <div class="field"><label>报名日期</label><input type="date" id="pf-edate" value="${p.student?p.student.enrollDate:todayStr()}"></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>缴费金额（元）</label><input id="pf-paid" value="${p.student?p.student.paidAmount:''}"></div>
-        <div class="field"><label>剩余课时</label><input id="pf-left" type="number" value="${p.student?p.student.remainingClasses:''}"></div>
-      </div>
+    <div class="form-row">
+      <div class="field"><label>组别</label><input id="pf-group" value="${escapeHtml(a.group||'')}"></div>
+      <div class="field"><label>主项（如短跑/跳跃）</label><input id="pf-spec" value="${escapeHtml(a.specialty||'')}"></div>
     </div>
-    <div class="ppl-ath" style="display:none">
-      <div class="form-row">
-        <div class="field"><label>组别</label><input id="pf-group" value="${p.athlete?escapeHtml(p.athlete.group):''}"></div>
-        <div class="field"><label>主项（如短跑/跳跃）</label><input id="pf-spec" value="${p.athlete?escapeHtml(p.athlete.specialty):''}"></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>入队日期</label><input type="date" id="pf-jdate" value="${p.athlete?p.athlete.joinDate:todayStr()}"></div>
-        <div class="field"><label>教练备注</label><input id="pf-note" value="${p.athlete?escapeHtml(p.athlete.note):''}"></div>
-      </div>
-    </div>
+    <div class="field"><label>入队日期</label><input type="date" id="pf-jdate" value="${a.joinDate||todayStr()}"></div>
     <div class="modal-actions">
       <button class="btn ghost" id="pfc-cancel">取消</button>
       <button class="btn" id="pfc-save">保存</button>
     </div>`);
-  const kindSel = document.getElementById('pf-kind');
-  function syncKind(){
-    const k = kindSel.value;
-    document.querySelector('.ppl-stu').style.display = k==='student'?'':'none';
-    document.querySelector('.ppl-ath').style.display = k==='athlete'?'':'none';
-  }
-  kindSel.onchange = syncKind; syncKind();
   document.getElementById('pfc-cancel').onclick = closeModal;
   document.getElementById('pfc-save').onclick = ()=>{
     const name = document.getElementById('pf-name').value.trim();
     if(!name){ toast('姓名不能为空'); return; }
-    const k = kindSel.value;
     const obj = isEdit ? p : { id:uid(), createdAt:todayStr() };
-    obj.kind = k; obj.name = name;
-    if(k==='student'){
-      obj.student = {
-        age: document.getElementById('pf-age').value,
-        parentPhone: document.getElementById('pf-phone').value.trim(),
-        project: document.getElementById('pf-project').value.trim(),
-        enrollDate: document.getElementById('pf-edate').value,
-        paidAmount: document.getElementById('pf-paid').value,
-        remainingClasses: Number(document.getElementById('pf-left').value)||0
-      };
-    } else {
-      obj.athlete = {
-        group: document.getElementById('pf-group').value.trim(),
-        specialty: document.getElementById('pf-spec').value.trim(),
-        joinDate: document.getElementById('pf-jdate').value,
-        note: document.getElementById('pf-note').value.trim()
-      };
-    }
+    obj.kind = 'athlete'; obj.name = name;
+    obj.athlete = {
+      group: document.getElementById('pf-group').value.trim(),
+      specialty: document.getElementById('pf-spec').value.trim(),
+      joinDate: document.getElementById('pf-jdate').value
+    };
     if(!isEdit) state.people.push(obj);
     save(); closeModal(); renderPeople(); toast('已保存');
   };
@@ -593,28 +540,12 @@ function renderPerson(id){
   if(!p){ v.innerHTML='<div class="empty-tip">找不到这个人</div>'; return; }
   const goals = state.goals.filter(g=>g.personId===id).sort((a,b)=>a.deadline.localeCompare(b.deadline));
   const recs = state.stageRecords.filter(r=>r.personId===id).sort((a,b)=>b.date.localeCompare(a.date));
-  const stu = p.kind==='student';
-  const profileRows = stu ? `
+  const profileRows = `
     <div class="form-row">
-      <div class="field"><label>年龄</label><input id="ed-age" value="${escapeHtml(p.student.age)}"></div>
-      <div class="field"><label>家长电话</label><input id="ed-phone" value="${escapeHtml(p.student.parentPhone)}"></div>
+      <div class="field"><label>组别</label><input id="ed-group" value="${escapeHtml(p.athlete.group||'')}"></div>
+      <div class="field"><label>主项</label><input id="ed-spec" value="${escapeHtml(p.athlete.specialty||'')}"></div>
     </div>
-    <div class="form-row">
-      <div class="field"><label>报名项目</label><input id="ed-project" value="${escapeHtml(p.student.project)}"></div>
-      <div class="field"><label>报名日期</label><input type="date" id="ed-edate" value="${p.student.enrollDate}"></div>
-    </div>
-    <div class="form-row">
-      <div class="field"><label>缴费金额（元）</label><input id="ed-paid" value="${escapeHtml(p.student.paidAmount)}"></div>
-      <div class="field"><label>剩余课时</label><input type="number" id="ed-left" value="${p.student.remainingClasses}"></div>
-    </div>` : `
-    <div class="form-row">
-      <div class="field"><label>组别</label><input id="ed-group" value="${escapeHtml(p.athlete.group)}"></div>
-      <div class="field"><label>主项</label><input id="ed-spec" value="${escapeHtml(p.athlete.specialty)}"></div>
-    </div>
-    <div class="form-row">
-      <div class="field"><label>入队日期</label><input type="date" id="ed-jdate" value="${p.athlete.joinDate}"></div>
-      <div class="field"><label>教练备注</label><input id="ed-note" value="${escapeHtml(p.athlete.note)}"></div>
-    </div>`;
+    <div class="field"><label>入队日期</label><input type="date" id="ed-jdate" value="${p.athlete.joinDate||''}"></div>`;
   const goalHtml = goals.map(g=>{
     const left = daysUntil(g.deadline);
     const leftCls = (!g.done && left<=10) ? 'warn-text' : '';
@@ -628,10 +559,8 @@ function renderPerson(id){
     </div>`;
   }).join('') || '<div class="empty-tip">还没设目标</div>';
   const recHtml = recs.map(r=>{
-    const m = r.metrics;
-    const parts = stu
-      ? `出勤 ${m.attendance||'—'} 次 · 体测 ${escapeHtml(m.testResult||'—')} · 剩课时 ${m.remainingClasses||'—'}`
-      : `100米 ${m.sprint100||'—'}s · 跳远 ${m.longJump||'—'}m · 深蹲 ${m.squat||'—'}kg · 体重 ${m.weight||'—'}kg · 周量 ${m.weeklyVolume||'—'}`;
+    const parts = EVENT_FIELDS.filter(f=>r.metrics[f[0]]!=='' && r.metrics[f[0]]!=null)
+      .map(f=>`${f[1]} ${r.metrics[f[0]]}${f[2]}`).join(' · ') || '（未填成绩）';
     return `<div class="tl-item">
       <div class="tl-date">${r.date}</div>
       <div>${parts}</div>
@@ -640,8 +569,8 @@ function renderPerson(id){
   }).join('') || '<div class="empty-tip">还没记过阶段数据</div>';
   v.innerHTML = `
     <div style="margin-bottom:10px"><button class="btn ghost small" id="ppl-back">‹ 返回名单</button></div>
-    <div class="view-title">${escapeHtml(p.name)} <span class="tag ${p.kind}">${stu?'学员':'队员'}</span></div>
-    <div class="view-sub">${stu?'体培学员':'田径队员'}</div>
+    <div class="view-title">${escapeHtml(p.name)} <span class="tag athlete">队员</span></div>
+    <div class="view-sub">田径队员</div>
     <div class="card">
       <h3>档案</h3>
       ${profileRows}
@@ -657,19 +586,9 @@ function renderPerson(id){
     </div>`;
   v.querySelector('#ppl-back').onclick = ()=>navigate('people');
   v.querySelector('#ed-save').onclick = ()=>{
-    if(stu){
-      p.student.age = document.getElementById('ed-age').value;
-      p.student.parentPhone = document.getElementById('ed-phone').value.trim();
-      p.student.project = document.getElementById('ed-project').value.trim();
-      p.student.enrollDate = document.getElementById('ed-edate').value;
-      p.student.paidAmount = document.getElementById('ed-paid').value;
-      p.student.remainingClasses = Number(document.getElementById('ed-left').value)||0;
-    } else {
-      p.athlete.group = document.getElementById('ed-group').value.trim();
-      p.athlete.specialty = document.getElementById('ed-spec').value.trim();
-      p.athlete.joinDate = document.getElementById('ed-jdate').value;
-      p.athlete.note = document.getElementById('ed-note').value.trim();
-    }
+    p.athlete.group = document.getElementById('ed-group').value.trim();
+    p.athlete.specialty = document.getElementById('ed-spec').value.trim();
+    p.athlete.joinDate = document.getElementById('ed-jdate').value;
     save(); toast('档案已保存');
   };
   v.querySelector('#goal-add').onclick = ()=>goalForm(id);
@@ -699,28 +618,20 @@ function goalForm(personId){
     save(); closeModal(); renderPerson(personId); toast('已保存');
   };
 }
+// 专项字段：[字段名, 显示名, 单位, 方向 down=越小越好 up=越大越好]
+const EVENT_FIELDS = [
+  ['m30','30米','s','down'], ['m60','60米','s','down'], ['m80','80米','s','down'],
+  ['m100','100米','s','down'], ['m200','200米','s','down'], ['m400','400米','s','down'],
+  ['m800','800米','s','down'],
+  ['tripleJump','三级跳远','m','up'], ['shotPut','铅球','m','up']
+];
 function recordForm(personId){
-  const p = state.people.find(x=>x.id===personId);
-  const stu = p.kind==='student';
-  const fields = stu ? `
-    <div class="form-row">
-      <div class="field"><label>出勤次数</label><input type="number" id="rf-att" value="0"></div>
-      <div class="field"><label>体测成绩</label><input id="rf-test" placeholder="如 13.5秒"></div>
-    </div>
-    <div class="field"><label>剩余课时</label><input type="number" id="rf-left" value="0"></div>` : `
-    <div class="form-row">
-      <div class="field"><label>100米（秒）</label><input type="number" step="0.01" id="rf-100"></div>
-      <div class="field"><label>立定跳远（米）</label><input type="number" step="0.01" id="rf-jump"></div>
-    </div>
-    <div class="form-row">
-      <div class="field"><label>深蹲（kg）</label><input type="number" id="rf-squat"></div>
-      <div class="field"><label>体重（kg）</label><input type="number" step="0.1" id="rf-weight"></div>
-    </div>
-    <div class="field"><label>本周训练量</label><input id="rf-vol" placeholder="如 跑了 40 公里"></div>`;
+  const fields = EVENT_FIELDS.map(f=>`
+    <div class="field"><label>${f[1]}（${f[2]}）</label><input type="number" step="0.01" id="rf-${f[0]}"></div>`).join('');
   openModal(`
     <h3>记一次阶段数据</h3>
     <div class="field"><label>日期</label><input type="date" id="rf-date" value="${todayStr()}"></div>
-    ${fields}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${fields}</div>
     <div class="field"><label>备注</label><input id="rf-note" placeholder="一句话状态"></div>
     <div class="modal-actions">
       <button class="btn ghost" id="rf-cancel">取消</button>
@@ -728,53 +639,35 @@ function recordForm(personId){
     </div>`);
   document.getElementById('rf-cancel').onclick=closeModal;
   document.getElementById('rf-save').onclick=()=>{
-    const metrics = stu ? {
-      attendance: Number(document.getElementById('rf-att').value)||0,
-      testResult: document.getElementById('rf-test').value.trim(),
-      remainingClasses: Number(document.getElementById('rf-left').value)||0
-    } : {
-      sprint100: document.getElementById('rf-100').value,
-      longJump: document.getElementById('rf-jump').value,
-      squat: document.getElementById('rf-squat').value,
-      weight: document.getElementById('rf-weight').value,
-      weeklyVolume: document.getElementById('rf-vol').value.trim()
-    };
+    const metrics = {};
+    EVENT_FIELDS.forEach(f=>{ metrics[f[0]] = document.getElementById('rf-'+f[0]).value; });
     state.stageRecords.push({ id:uid(), personId, date:document.getElementById('rf-date').value||todayStr(),
       metrics, note:document.getElementById('rf-note').value.trim() });
     save(); closeModal(); renderPerson(personId); toast('已记录');
   };
 }
 /* ================= 阶段4：阶段汇总页 ================= */
-const METRIC_DEF = {
-  sprint100: { label:'100米', unit:'s', dir:'down' },
-  longJump:  { label:'跳远', unit:'m', dir:'up' },
-  squat:     { label:'深蹲', unit:'kg', dir:'up' },
-  weight:    { label:'体重', unit:'kg', dir:'down' },
-  attendance:{ label:'出勤', unit:'次', dir:'up' },
-  remainingClasses: { label:'剩课时', unit:'节', dir:'neutral' }
-};
+function METRIC_DEF(){
+  const o = {};
+  EVENT_FIELDS.forEach(f=>{ o[f[0]] = { label:f[1], unit:f[2], dir:f[3] }; });
+  return o;
+}
 function comparePerson(recs){
   // 对每个指标，各自找它最近出现的两次记录来对比
   const sorted = recs.slice().sort((a,b)=>a.date.localeCompare(b.date));
   const out = [];
-  for(const key of Object.keys(METRIC_DEF)){
+  const defs = METRIC_DEF();
+  for(const key of Object.keys(defs)){
     const series = sorted.filter(r=>r.metrics && r.metrics[key]!=='' && r.metrics[key]!=null);
     if(series.length<2) continue;
     const prev = series[series.length-2], curr = series[series.length-1];
     const a = parseFloat(prev.metrics[key]), b = parseFloat(curr.metrics[key]);
     if(isNaN(a)||isNaN(b)) continue;
-    const def = METRIC_DEF[key];
+    const def = defs[key];
     let cls = 'flat';
-    if(def.dir!=='neutral'){
-      if(b < a){ cls = (def.dir==='down') ? 'up' : 'down'; }
-      else if(b > a){ cls = (def.dir==='up') ? 'up' : 'down'; }
-    }
+    if(b < a){ cls = (def.dir==='down') ? 'up' : 'down'; }
+    else if(b > a){ cls = (def.dir==='up') ? 'up' : 'down'; }
     out.push(`${def.label} <span class="${cls}">${a}${def.unit}→${b}${def.unit}</span>`);
-  }
-  const ts = sorted.filter(r=>r.metrics && r.metrics.testResult);
-  if(ts.length>=2){
-    const p = ts[ts.length-2].metrics.testResult, c = ts[ts.length-1].metrics.testResult;
-    if(p && c && p!==c) out.push(`体测 <span class="flat">${escapeHtml(p)}→${escapeHtml(c)}</span>`);
   }
   return out;
 }
@@ -800,7 +693,7 @@ function renderStages(){
     }
     return `<div class="row" data-person="${p.id}" style="cursor:pointer">
       <div class="grow">
-        <div style="font-weight:600">${escapeHtml(p.name)} <span class="tag ${p.kind}">${p.kind==='student'?'学员':'队员'}</span></div>
+        <div style="font-weight:600">${escapeHtml(p.name)} <span class="tag athlete">队员</span></div>
         ${goalHtml}${cmp}
       </div>
     </div>`;
@@ -815,7 +708,7 @@ function renderStages(){
     openModal(`
       <h3>选一个人记数据</h3>
       <div class="field"><label>选择人员</label>
-        <select id="sr-person">${state.people.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}（${p.kind==='student'?'学员':'队员'}）</option>`).join('')}</select>
+        <select id="sr-person">${state.people.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}（队员）</option>`).join('')}</select>
       </div>
       <div class="modal-actions">
         <button class="btn ghost" id="sr-cancel">取消</button>
