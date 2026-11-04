@@ -579,7 +579,7 @@ function renderPerson(id){
     const parts = EVENT_FIELDS.filter(f=>r.metrics[f[0]]!=='' && r.metrics[f[0]]!=null)
       .map(f=>`${f[1]} ${r.metrics[f[0]]}${f[2]}`).join(' · ') || '（未填成绩）';
     return `<div class="tl-item">
-      <div class="tl-date">${r.date}</div>
+      <div class="tl-date">${r.date} <button class="btn ghost small" data-rec-del="${r.id}" style="float:right">删</button></div>
       <div>${parts}</div>
       ${r.note?`<div style="font-size:13px;color:var(--muted)">${escapeHtml(r.note)}</div>`:''}
     </div>`;
@@ -616,6 +616,12 @@ function renderPerson(id){
   v.querySelectorAll('[data-goal-del]').forEach(b=>b.onclick=()=>{
     const g=state.goals.find(x=>x.id===b.dataset.goalDel);
     confirmDialog(`删除目标"${g.text}"？`, ()=>{ state.goals=state.goals.filter(x=>x.id!==g.id); save(); renderPerson(id); toast('已删除'); });
+  });
+  v.querySelectorAll('[data-rec-del]').forEach(b=>b.onclick=()=>{
+    confirmDialog('删除这条阶段数据记录？', ()=>{
+      state.stageRecords = state.stageRecords.filter(x=>x.id!==b.dataset.recDel);
+      save(); renderPerson(id); toast('已删除');
+    });
   });
 }
 function goalForm(personId){
