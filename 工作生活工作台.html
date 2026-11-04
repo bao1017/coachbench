@@ -309,28 +309,22 @@ function renderHome(){
       <button class="memo-del" data-memo-del="${m.id}">×</button>
     </div>`).join('') || '<div class="empty-tip">随手写一句备忘，回车就贴上</div>';
 
-  // 四个摘要
+  // 三个摘要：计划 / 测试总览 / 人员总览
   const todayUndone = todays.filter(p=>!p.done).length;
-  const lowClass = state.people.filter(p=>p.kind==='student' && p.student.remainingClasses<=4).length;
-  const soonGoals = state.goals.filter(g=>!g.done && daysUntil(g.deadline)<=30).length;
-  const weekAgo = new Date(Date.now()-7*86400000);
-  const weekAgoStr = ymd(weekAgo);
-  const noRecentRec = state.people.filter(p=>{
-    return !state.stageRecords.some(r=>r.personId===p.id && r.date >= weekAgoStr);
-  }).length;
+  const weekAgoStr = ymd(new Date(Date.now()-7*86400000));
+  const testedPeople = new Set(state.stageRecords.filter(r=>r.date >= weekAgoStr).map(r=>r.personId)).size;
+  const totalPeople = state.people.length;
 
   v.innerHTML = `
     <div class="view-title">今天干点啥，一眼看完</div>
-    <div class="view-sub">下面四格分别对应四个模块，哪格有情况点哪格。</div>
-    <div class="grid-4" style="margin-bottom:22px">
+    <div class="view-sub">下面三格分别对应计划、测试、人员，哪格有情况点哪格。</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
       <button class="stat-cell" data-go="calendar">
         <div class="stat-num">${todayUndone}</div><div class="stat-label">今天未完成的计划</div></button>
-      <button class="stat-cell ${lowClass?'':'',''}" data-go="people">
-        <div class="stat-num ${lowClass?'warn':''}">${lowClass}</div><div class="stat-label">课时不足 4 节的学员</div></button>
       <button class="stat-cell" data-go="stages">
-        <div class="stat-num ${soonGoals?'warn':''}">${soonGoals}</div><div class="stat-label">30 天内到期的目标</div></button>
-      <button class="stat-cell" data-go="stages">
-        <div class="stat-num ${noRecentRec?'warn':''}">${noRecentRec}</div><div class="stat-label">本周没记过数据的人</div></button>
+        <div class="stat-num">${testedPeople}</div><div class="stat-label">本周已测人数（测试总览）</div></button>
+      <button class="stat-cell" data-go="people">
+        <div class="stat-num">${totalPeople}</div><div class="stat-label">在册队员（人员总览）</div></button>
     </div>
     <div class="grid-2">
       <div class="card">
