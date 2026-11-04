@@ -19,41 +19,36 @@ def main():
         today = datetime.date.today().isoformat()
 
         pg.click('.nav-item[data-view="calendar"]'); pg.wait_for_timeout(150)
-        # 点今天的格子 → 直接弹表格
         pg.click(f'.cal-cell[data-date="{today}"]')
         pg.wait_for_timeout(200)
-        assert pg.is_visible("#overlay"), "点日期没弹出计划表格"
-        assert pg.locator(".pt-c").count() >= 1, "表格里没有内容输入框"
+        assert pg.is_visible("#overlay")
+        assert pg.locator("#pt-normal .pt-c").count() >= 1
         for label in ["内容","次数","组数","强度"]:
             assert pg.locator(f"th:text('{label}')").count() >= 1, f"缺表头 {label}"
 
-        # 填两行
-        pg.fill(".pt-c >> nth=0", "起跑练习")
-        pg.fill(".pt-r >> nth=0", "30")
-        pg.fill(".pt-s >> nth=0", "4")
-        pg.fill(".pt-i >> nth=0", "大")
-        pg.click("#pt-addrow"); pg.wait_for_timeout(100)
-        pg.fill(".pt-c >> nth=1", "加速跑")
-        pg.fill(".pt-r >> nth=1", "60")
-        pg.fill(".pt-s >> nth=1", "6")
-        pg.fill(".pt-i >> nth=1", "中")
+        pg.fill("#pt-normal .pt-c >> nth=0", "起跑练习")
+        pg.fill("#pt-normal .pt-r >> nth=0", "30")
+        pg.fill("#pt-normal .pt-s >> nth=0", "4")
+        pg.fill("#pt-normal .pt-i >> nth=0", "大")
+        pg.click('.pt-add[data-g="normal"]'); pg.wait_for_timeout(100)
+        pg.fill("#pt-normal .pt-c >> nth=1", "加速跑")
+        pg.fill("#pt-normal .pt-r >> nth=1", "60")
+        pg.fill("#pt-normal .pt-s >> nth=1", "6")
+        pg.fill("#pt-normal .pt-i >> nth=1", "中")
         pg.click("#pf-save"); pg.wait_for_timeout(200)
 
-        # 格子上显示 2 件
         mark = pg.locator(f'.cal-cell[data-date="{today}"] .mark')
         assert "2" in mark.inner_text(), mark.inner_text()
 
-        # 首页今日计划 2 条
         pg.click('.nav-item[data-view="home"]'); pg.wait_for_timeout(200)
         assert pg.is_visible("text=起跑练习")
         assert pg.is_visible("text=加速跑")
 
-        # 再点回去能看到原来填的内容
         pg.click('.nav-item[data-view="calendar"]'); pg.wait_for_timeout(150)
         pg.click(f'.cal-cell[data-date="{today}"]')
         pg.wait_for_timeout(200)
-        assert pg.input_value(".pt-c >> nth=0") == "起跑练习"
-        assert pg.input_value(".pt-i >> nth=1") == "中"
+        assert pg.input_value("#pt-normal .pt-c >> nth=0") == "起跑练习"
+        assert pg.input_value("#pt-normal .pt-i >> nth=1") == "中"
 
         pg.evaluate("localStorage.removeItem('coachbench-v1');")
         assert not errors, f"控制台报错: {errors}"

@@ -297,7 +297,7 @@ function renderHome(){
     <div class="row">
       <input type="checkbox" data-hp-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px">
       <div class="grow" style="${p.done?'text-decoration:line-through;color:var(--muted)':''}">
-        ${escapeHtml(p.title)} <span style="font-size:13px;color:var(--muted)">${escapeHtml(p.time||'')}</span>
+        <span class="tag ${p.group==='injured'?'student':'athlete'}" style="margin-right:6px">${p.group==='injured'?'伤病':'正常'}</span>${escapeHtml(p.title)}
       </div>
     </div>`;
   const overdueHtml = overdue.length
@@ -406,64 +406,79 @@ function renderCalendar(){
   document.getElementById('plan-add').onclick=()=>planTableForm(selDate);
 }
 function typeLabel(t){ return ({work:'工作',training:'训练',life:'生活'})[t]||'工作'; }
+function blankRow(){ return {content:'',reps:'',sets:'',intensity:'',done:false}; }
 function planTableForm(dateStr){
-  let rows = state.plans.filter(p=>p.date===dateStr)
-    .map(p=>({content:p.title, reps:p.reps||'', sets:p.sets||'', intensity:p.intensity||'', done:!!p.done}));
-  if(!rows.length) rows = [{content:'',reps:'',sets:'',intensity:'',done:false}];
-  openModal(`
-    <h3>${dateStr} 训练计划</h3>
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+  const todayPlans = state.plans.filter(p=>p.date===dateStr);
+  const normal = todayPlans.filter(p=>(p.group||'normal')==='normal').map(p=>({content:p.title,reps:p.reps||'',sets:p.sets||'',intensity:p.intensity||'',done:!!p.done}));
+  const injured = todayPlans.filter(p=>p.group==='injured').map(p=>({content:p.title,reps:p.reps||'',sets:p.sets||'',intensity:p.intensity||'',done:!!p.done}));
+  if(!normal.length) normal.push(blankRow());
+  if(!injured.length) injured.push(blankRow());
+  function tableHtml(bodyId, rows){
+    return `<table style="width:100%;border-collapse:collapse;table-layout:fixed">
       <thead><tr style="text-align:left;color:var(--muted);font-size:13px">
-        <th style="width:36px;padding:6px 4px">#</th>
+        <th style="width:40px;padding:6px 4px">#</th>
         <th style="padding:6px 4px">内容</th>
-        <th style="width:80px;padding:6px 4px">次数</th>
-        <th style="width:70px;padding:6px 4px">组数</th>
-        <th style="width:90px;padding:6px 4px">强度</th>
+        <th style="width:90px;padding:6px 4px">次数</th>
+        <th style="width:80px;padding:6px 4px">组数</th>
+        <th style="width:100px;padding:6px 4px">强度</th>
         <th style="width:50px"></th>
       </tr></thead>
-      <tbody id="pt-body"></tbody>
-    </table>
-    <button class="btn ghost small" id="pt-addrow" style="margin:10px 0">＋ 加一行</button>
+      <tbody id="${bodyId}"></tbody>
+    </table>`;
+  }
+  openModal(`
+    <h3>${dateStr} 训练计划</h3>
+    <div style="font-weight:700;margin:6px 0 4px">正常训练计划</div>
+    ${tableHtml('pt-normal', normal)}
+    <button class="btn ghost small pt-add" data-g="normal" style="margin:8px 0 18px">＋ 加一行</button>
+    <div style="font-weight:700;margin:6px 0 4px;color:var(--cinnabar)">伤病队员训练计划</div>
+    ${tableHtml('pt-injured', injured)}
+    <button class="btn ghost small pt-add" data-g="injured" style="margin:8px 0">＋ 加一行</button>
     <div class="modal-actions">
       <button class="btn ghost" id="pf-cancel">取消</button>
       <button class="btn" id="pf-save">保存</button>
     </div>`);
-  function syncFromDom(){
-    document.querySelectorAll('#pt-body tr').forEach((tr,i)=>{
+  function syncBody(bodyId, rows){
+    document.querySelectorAll('#'+bodyId+' tr').forEach((tr,i)=>{
       rows[i].content = tr.querySelector('.pt-c').value;
       rows[i].reps = tr.querySelector('.pt-r').value;
       rows[i].sets = tr.querySelector('.pt-s').value;
       rows[i].intensity = tr.querySelector('.pt-i').value;
     });
   }
-  function drawRows(){
-    document.getElementById('pt-body').innerHTML = rows.map((r,i)=>`
+  function drawBody(bodyId, rows){
+    document.getElementById(bodyId).innerHTML = rows.map((r,i)=>`
       <tr>
         <td style="padding:4px">${i+1}</td>
         <td style="padding:4px"><input class="pt-c" value="${escapeHtml(r.content)}" style="width:100%"></td>
         <td style="padding:4px"><input class="pt-r" value="${escapeHtml(r.reps)}" style="width:100%"></td>
         <td style="padding:4px"><input class="pt-s" value="${escapeHtml(r.sets)}" style="width:100%"></td>
         <td style="padding:4px"><input class="pt-i" value="${escapeHtml(r.intensity)}" style="width:100%"></td>
-        <td style="padding:4px"><button class="btn ghost small pt-del" data-i="${i}">删</button></td>
+        <td style="padding:4px"><button class="btn ghost small pt-del" data-b="${bodyId}" data-i="${i}">删</button></td>
       </tr>`).join('');
-    document.querySelectorAll('.pt-del').forEach(b=>b.onclick=()=>{
-      syncFromDom(); rows.splice(Number(b.dataset.i),1); drawRows();
+    document.querySelectorAll(`#${bodyId} .pt-del`).forEach(b=>b.onclick=()=>{
+      const arr = bodyId==='pt-normal'?normal:injured;
+      syncBody(bodyId, arr); arr.splice(Number(b.dataset.i),1); drawBody(bodyId, arr);
     });
   }
-  drawRows();
-  document.getElementById('pt-addrow').onclick=()=>{
-    syncFromDom(); rows.push({content:'',reps:'',sets:'',intensity:'',done:false}); drawRows();
-  };
+  drawBody('pt-normal', normal);
+  drawBody('pt-injured', injured);
+  document.querySelectorAll('.pt-add').forEach(b=>b.onclick=()=>{
+    const bodyId = b.dataset.g==='normal'?'pt-normal':'pt-injured';
+    const arr = b.dataset.g==='normal'?normal:injured;
+    syncBody(bodyId, arr); arr.push(blankRow()); drawBody(bodyId, arr);
+  });
   document.getElementById('pf-cancel').onclick=closeModal;
   document.getElementById('pf-save').onclick=()=>{
-    syncFromDom();
+    syncBody('pt-normal', normal); syncBody('pt-injured', injured);
     const kept = new Map(state.plans.filter(p=>p.date===dateStr).map(p=>[p.title, p.done]));
     state.plans = state.plans.filter(p=>p.date!==dateStr);
-    rows.filter(r=>r.content.trim()).forEach(r=>{
+    const push = (arr, group)=>arr.filter(r=>r.content.trim()).forEach(r=>{
       state.plans.push({ id:uid(), date:dateStr, time:'', title:r.content.trim(),
         reps:r.reps.trim(), sets:r.sets.trim(), intensity:r.intensity.trim(),
-        type:'work', peopleIds:[], note:'', done: !!kept.get(r.content.trim()) });
+        group, type:'work', peopleIds:[], note:'', done: !!kept.get(r.content.trim()) });
     });
+    push(normal,'normal'); push(injured,'injured');
     save(); closeModal(); renderCalendar(); toast('已保存');
   };
 }
