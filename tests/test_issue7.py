@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-"""问题7测试：阶段数据记录可删除（带确认）"""
+"""问题7测试：阶段数据记录可删除——左滑露出删除键再点（带确认）"""
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 HTML = Path(r"C:\Users\陈硕腾\Desktop\app\工作生活工作台.html")
+
+def swipe_left(pg, sel):
+    # 模拟左滑后的展开态（手势在 headless 下不稳定，直接摆态验证删除流程）
+    pg.locator(sel).evaluate("e => e.style.transform='translateX(-76px)'")
+    pg.wait_for_timeout(150)
 
 def main():
     errors = []
@@ -26,14 +31,20 @@ def main():
         pg.click("#rec-add"); pg.wait_for_timeout(150)
         pg.fill("#rf-m100", "13.5")
         pg.click("#rf-save"); pg.wait_for_timeout(200)
-        assert pg.is_visible("text=100米 13.5s"), "记录没加上"
+        assert pg.is_visible("text=100米 13.5s")
 
-        # 删除：先取消
+        # 删除按钮默认藏在卡片后面（translateX 为 0）
+        t = pg.locator(".swipe-in").first.evaluate("e => getComputedStyle(e).transform")
+        assert t in ("none", "matrix(1, 0, 0, 1, 0, 0)"), t
+
+        # 左滑露出
+        swipe_left(pg, ".swipe-in")
         pg.click("[data-rec-del]"); pg.wait_for_timeout(150)
         pg.click("#cf-no"); pg.wait_for_timeout(150)
         assert pg.evaluate("state.stageRecords.length") == 1, "取消删除不该删"
 
-        # 删除：确认
+        # 左滑→确认
+        swipe_left(pg, ".swipe-in")
         pg.click("[data-rec-del]"); pg.wait_for_timeout(150)
         pg.click("#cf-yes"); pg.wait_for_timeout(200)
         assert pg.evaluate("state.stageRecords.length") == 0, "确认后记录还在"
@@ -41,7 +52,7 @@ def main():
         pg.evaluate("localStorage.removeItem('coachbench-v1');")
         assert not errors, f"控制台报错: {errors}"
         b.close()
-    print("PASS 问题7：阶段记录可删除")
+    print("PASS 问题7：左滑删除")
 
 if __name__ == "__main__":
     try:
