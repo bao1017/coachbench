@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的工作台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23B53A2E'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='%23FBF9F3' font-family='sans-serif' font-weight='bold'>台</text></svg>">
+<style>
+/* ============ 设计 token ============ */
+:root{
+  --paper:#F4F1E8;
+  --card:#FBF9F3;
+  --ink:#23251F;
+  --muted:#6E7166;
+  --line:#E2DCCB;
+  --cinnabar:#B53A2E;
+  --pine:#3E6B4F;
+  --amber:#B98228;
+  --radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;
+  font-size:15px;line-height:1.6;
+}
+button{font-family:inherit;font-size:15px;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:15px}
+
+/* ============ 整体布局 ============ */
+#app{display:grid;grid-template-columns:210px 1fr;grid-template-rows:56px 1fr;height:100vh}
+#topbar{
+  grid-column:1/3;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;border-bottom:1px solid var(--line);background:var(--card);
+}
+#brand{font-size:17px;font-weight:700;letter-spacing:1px}
+#top-right{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:13px}
+#save-status{display:flex;align-items:center;gap:6px}
+#save-status .dot{width:7px;height:7px;border-radius:50%;background:var(--pine)}
+
+/* ============ 侧边导航 ============ */
+#sidebar{
+  border-right:1px solid var(--line);background:var(--card);
+  padding:16px 10px;display:flex;flex-direction:column;gap:4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:11px 14px;border:none;background:transparent;border-radius:var(--radius);
+  color:var(--ink);text-align:left;font-size:15px;
+}
+.nav-item svg{width:19px;height:19px;flex:none}
+.nav-item:hover{background:#EFEAD9}
+.nav-item.active{background:var(--ink);color:var(--paper)}
+.nav-divider{height:1px;background:var(--line);margin:10px 8px}
+#nav-settings{margin-top:auto}
+
+/* ============ 内容区 ============ */
+#main{overflow:auto;padding:28px 32px}
+.view{max-width:1080px;margin:0 auto}
+.view-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.view-sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+
+/* ============ 卡片 ============ */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+.card h3{font-size:15px;font-weight:700;margin-bottom:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.grid-2,.grid-4{grid-template-columns:1fr}}
+
+/* ============ 摘要格 ============ */
+.stat-cell{cursor:pointer;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:16px}
+.stat-cell:hover{border-color:var(--ink)}
+.stat-num{font-size:28px;font-weight:700;line-height:1.2}
+.stat-num.warn{color:var(--cinnabar)}
+.stat-label{color:var(--muted);font-size:13px;margin-top:4px}
+
+/* ============ 按钮 ============ */
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:6px}
+.btn:hover{opacity:.9}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.danger{background:var(--cinnabar);border-color:var(--cinnabar);color:#fff}
+.btn.small{padding:5px 12px;font-size:13px}
+
+/* ============ 列表行 ============ */
+.row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row .grow{flex:1;min-width:0}
+.tag{display:inline-block;padding:1px 9px;border-radius:4px;font-size:12px;background:#E7E2D2;color:#5C5F52}
+.tag.student{background:#DCE4E8;color:#33525F}
+.tag.athlete{background:#DCE8DC;color:#2F5A38}
+.dot-status{width:9px;height:9px;border-radius:50%;background:#C9C4B4;flex:none}
+.dot-status.hot{background:var(--cinnabar)}
+.dot-status.ok{background:var(--pine)}
+
+/* ============ 表单 ============ */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--ink);outline-offset:-1px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ============ 日历 ============ */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-head h3{font-size:17px}
+.cal-nav{display:flex;gap:8px;align-items:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{text-align:center;font-size:12px;color:var(--muted);padding:6px 0}
+.cal-cell{
+  min-height:86px;border:1px solid var(--line);border-radius:6px;background:var(--card);
+  padding:6px;font-size:13px;cursor:pointer;overflow:hidden;
+}
+.cal-cell:hover{border-color:var(--ink)}
+.cal-cell.other{opacity:.35}
+.cal-cell.today{border:2px solid var(--cinnabar)}
+.cal-cell.selected{border:2px solid var(--ink)}
+.cal-cell .d{font-weight:700}
+.cal-cell .mark{font-size:11px;color:var(--pine);margin-top:3px}
+
+/* ============ 弹窗 / toast ============ */
+#overlay{
+  position:fixed;inset:0;background:rgba(35,37,31,.4);display:none;
+  align-items:flex-start;justify-content:center;padding-top:8vh;z-index:50;
+}
+#overlay.show{display:flex}
+#modal{background:var(--card);border-radius:10px;padding:22px;width:460px;max-width:92vw;max-height:80vh;overflow:auto}
+#modal h3{margin-bottom:14px;font-size:17px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+#toast{
+  position:fixed;right:24px;bottom:24px;background:var(--ink);color:var(--paper);
+  padding:10px 18px;border-radius:6px;font-size:14px;opacity:0;transition:opacity .25s;z-index:99;pointer-events:none;
+}
+#toast.show{opacity:1}
+
+/* ============ 备忘 ============ */
+.memo-item{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed var(--line)}
+.memo-item:last-child{border-bottom:none}
+.memo-item.done .memo-text{text-decoration:line-through;color:var(--muted)}
+.memo-del{margin-left:auto;border:none;background:none;color:var(--muted);font-size:16px;visibility:hidden}
+.memo-item:hover .memo-del{visibility:visible}
+#memo-input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:#fff}
+
+/* ============ 时间线 ============ */
+.tl{border-left:2px solid var(--line);margin-left:8px;padding-left:18px}
+.tl-item{position:relative;padding-bottom:16px}
+.tl-item::before{content:"";position:absolute;left:-23px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--pine)}
+.tl-date{font-size:12px;color:var(--muted)}
+.up{color:var(--pine);font-weight:700}
+.down{color:var(--cinnabar);font-weight:700}
+.flat{color:var(--muted)}
+.empty-tip{color:var(--muted);font-size:14px;padding:18px 0;text-align:center}
+.warn-text{color:var(--cinnabar)}
+.section-gap{margin-top:22px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div id="brand">我的工作台</div>
+    <div id="top-right">
+      <span id="top-date"></span>
+      <span id="save-status"><span class="dot"></span>已自动保存</span>
+    </div>
+  </div>
+
+  <nav id="sidebar">
+    <button class="nav-item" data-view="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      首页
+    </button>
+    <button class="nav-item" data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      计划日期
+    </button>
+    <button class="nav-item" data-view="people">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/></svg>
+      人员名单
+    </button>
+    <button class="nav-item" data-view="stages">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+      阶段与目标
+    </button>
+    <div class="nav-divider"></div>
+    <button class="nav-item" id="nav-settings" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>
+      数据与设置
+    </button>
+  </nav>
+
+  <main id="main">
+    <div id="view-home" class="view"></div>
+    <div id="view-calendar" class="view"></div>
+    <div id="view-people" class="view"></div>
+    <div id="view-person" class="view" style="display:none"></div>
+    <div id="view-stages" class="view"></div>
+    <div id="view-settings" class="view"></div>
+  </main>
+</div>
+
+<div id="overlay"><div id="modal"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ================= 数据层 ================= */
+const STORE_KEY = 'coachbench-v1';
+function defaultState(){ return { people:[], plans:[], goals:[], stageRecords:[], memos:[] }; }
+let state;
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const s = JSON.parse(raw); return Object.assign(defaultState(), s); }
+  }catch(e){ console.error('读取本地数据失败', e); }
+  return defaultState();
+}
+function save(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  flashSaved();
+}
+function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function ymd(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function todayStr(){ return ymd(new Date()); }
+function daysUntil(dateStr){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const t = new Date(dateStr + 'T00:00:00');
+  return Math.round((t - now)/86400000);
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ================= 通用组件 ================= */
+let toastTimer = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2000);
+}
+function flashSaved(){
+  // 顶部状态已常驻"已自动保存"，无需额外动作
+}
+function openModal(html){
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target.id === 'overlay') closeModal();
+});
+function confirmDialog(msg, onYes){
+  openModal(`
+    <h3>请确认</h3>
+    <p style="color:var(--ink)">${msg}</p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cf-no">取消</button>
+      <button class="btn danger" id="cf-yes">确认</button>
+    </div>`);
+  document.getElementById('cf-no').onclick = closeModal;
+  document.getElementById('cf-yes').onclick = ()=>{ closeModal(); onYes(); };
+}
+
+/* ================= 路由 ================= */
+let route = { view:'home', personId:null };
+function navigate(view, personId){
+  route = { view, personId: personId||null };
+  render();
+}
+function render(){
+  document.querySelectorAll('.view').forEach(v=>v.style.display='none');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b.dataset.view===route.view));
+  const map = { home:'view-home', calendar:'view-calendar', people:'view-people',
+                person:'view-person', stages:'view-stages', settings:'view-settings' };
+  document.getElementById(map[route.view]).style.display='block';
+  if(route.view==='home') renderHome();
+  else if(route.view==='calendar') renderCalendar();
+  else if(route.view==='people') renderPeople();
+  else if(route.view==='person') renderPerson(route.personId);
+  else if(route.view==='stages') renderStages();
+  else if(route.view==='settings') renderSettings();
+}
+document.querySelectorAll('.nav-item').forEach(b=>{
+  b.addEventListener('click', ()=>navigate(b.dataset.view));
+});
+
+/* ================= 阶段5：首页 ================= */
+function renderHome(){
+  const v = document.getElementById('view-home');
+  const today = todayStr();
+  const todays = state.plans.filter(p=>p.date===today).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
+  const overdue = state.plans.filter(p=>!p.done && p.date < today);
+  const peopleById = Object.fromEntries(state.people.map(p=>[p.id,p.name]));
+  const planRow = p => `
+    <div class="row">
+      <input type="checkbox" data-hp-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px">
+      <div class="grow" style="${p.done?'text-decoration:line-through;color:var(--muted)':''}">
+        ${escapeHtml(p.title)} <span style="font-size:13px;color:var(--muted)">${escapeHtml(p.time||'')} · ${typeLabel(p.type)}</span>
+      </div>
+    </div>`;
+  const overdueHtml = overdue.length
+    ? `<div style="margin-top:10px"><div class="warn-text" style="font-size:13px;margin-bottom:4px">已逾期 ${overdue.length} 件：</div>${overdue.map(planRow).join('')}</div>`
+    : '';
+  const memos = state.memos.slice().reverse().map(m=>`
+    <div class="memo-item ${m.done?'done':''}">
+      <input type="checkbox" data-memo-done="${m.id}" ${m.done?'checked':''} style="width:16px;height:16px">
+      <span class="memo-text">${escapeHtml(m.text)}</span>
+      <button class="memo-del" data-memo-del="${m.id}">×</button>
+    </div>`).join('') || '<div class="empty-tip">随手写一句备忘，回车就贴上</div>';
+
+  // 四个摘要
+  const todayUndone = todays.filter(p=>!p.done).length;
+  const lowClass = state.people.filter(p=>p.kind==='student' && p.student.remainingClasses<=4).length;
+  const soonGoals = state.goals.filter(g=>!g.done && daysUntil(g.deadline)<=30).length;
+  const weekAgo = new Date(Date.now()-7*86400000);
+  const weekAgoStr = ymd(weekAgo);
+  const noRecentRec = state.people.filter(p=>{
+    return !state.stageRecords.some(r=>r.personId===p.id && r.date >= weekAgoStr);
+  }).length;
+
+  v.innerHTML = `
+    <div class="view-title">今天干点啥，一眼看完</div>
+    <div class="view-sub">下面四格分别对应四个模块，哪格有情况点哪格。</div>
+    <div class="grid-4" style="margin-bottom:22px">
+      <button class="stat-cell" data-go="calendar">
+        <div class="stat-num">${todayUndone}</div><div class="stat-label">今天未完成的计划</div></button>
+      <button class="stat-cell ${lowClass?'':'',''}" data-go="people">
+        <div class="stat-num ${lowClass?'warn':''}">${lowClass}</div><div class="stat-label">课时不足 4 节的学员</div></button>
+      <button class="stat-cell" data-go="stages">
+        <div class="stat-num ${soonGoals?'warn':''}">${soonGoals}</div><div class="stat-label">30 天内到期的目标</div></button>
+      <button class="stat-cell" data-go="stages">
+        <div class="stat-num ${noRecentRec?'warn':''}">${noRecentRec}</div><div class="stat-label">本周没记过数据的人</div></button>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>今日计划 <span style="float:right"><button class="btn ghost small" id="go-cal">去日历安排 ›</button></span></h3>
+        ${todays.map(planRow).join('') || '<div class="empty-tip">今天还没安排计划</div>'}
+        ${overdueHtml}
+      </div>
+      <div class="card">
+        <h3>快速备忘</h3>
+        <input id="memo-input" placeholder="写一句话，回车贴上…">
+        <div style="margin-top:10px">${memos}</div>
+      </div>
+    </div>`;
+  v.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>navigate(b.dataset.go));
+  v.querySelector('#go-cal').onclick=()=>navigate('calendar');
+  v.querySelectorAll('[data-hp-done]').forEach(cb=>cb.onchange=()=>{
+    const p=state.plans.find(x=>x.id===cb.dataset.hpDone); p.done=cb.checked; save(); renderHome();
+  });
+  const mi = v.querySelector('#memo-input');
+  mi.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
+      const t = mi.value.trim();
+      if(!t) return;
+      state.memos.push({id:uid(), text:t, done:false, createdAt:Date.now()});
+      save(); renderHome(); document.getElementById('memo-input').focus();
+    }
+  });
+  v.querySelectorAll('[data-memo-done]').forEach(cb=>cb.onchange=()=>{
+    const m=state.memos.find(x=>x.id===cb.dataset.memoDone); m.done=cb.checked; save(); renderHome();
+  });
+  v.querySelectorAll('[data-memo-del]').forEach(b=>b.onclick=()=>{
+    state.memos=state.memos.filter(x=>x.id!==b.dataset.memoDel); save(); renderHome();
+  });
+}
+
+/* ================= 阶段2：计划日历 ================= */
+let calYear, calMonth, selDate;
+function renderCalendar(){
+  if(calYear===undefined){ const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth(); selDate=todayStr(); }
+  const v = document.getElementById('view-calendar');
+  const first = new Date(calYear, calMonth, 1);
+  const startOffset = (first.getDay()+6)%7; // 周一开头
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  const today = todayStr();
+  let cells = '';
+  const dow = ['一','二','三','四','五','六','日'];
+  dow.forEach(d=>cells+=`<div class="cal-dow">周${d}</div>`);
+  for(let i=0;i<42;i++){
+    const dayNum = i - startOffset + 1;
+    let cls='cal-cell', label, iso;
+    if(dayNum<1){ label=prevDays+dayNum-1; cls+=' other'; }
+    else if(dayNum>daysInMonth){ label=dayNum-daysInMonth; cls+=' other'; }
+    else { label=dayNum; iso=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`; }
+    if(iso===today) cls+=' today';
+    if(iso===selDate) cls+=' selected';
+    const cnt = iso ? state.plans.filter(p=>p.date===iso).length : 0;
+    cells += `<div class="${cls}" data-date="${iso||''}"><div class="d">${label}</div>${cnt?`<div class="mark">${cnt} 件事</div>`:''}</div>`;
+  }
+  const dayPlans = state.plans.filter(p=>p.date===selDate).sort((a,b)=>(a.time||'99').localeCompare(b.time||'99'));
+  const peopleById = Object.fromEntries(state.people.map(p=>[p.id,p.name]));
+  let listHtml;
+  if(!dayPlans.length) listHtml='<div class="empty-tip">这一天还没安排，点下面按钮加一条</div>';
+  else listHtml = dayPlans.map(p=>{
+    const rel = p.peopleIds.map(id=>peopleById[id]||'').filter(Boolean).join('、');
+    return `<div class="row">
+      <input type="checkbox" data-plan-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px">
+      <div class="grow" style="${p.done?'text-decoration:line-through;color:var(--muted)':''}">
+        <div style="font-weight:600">${escapeHtml(p.title)} <span style="font-weight:400;color:var(--muted);font-size:13px">${escapeHtml(p.time||'')} · ${typeLabel(p.type)}</span></div>
+        ${rel?`<div style="font-size:13px;color:var(--muted)">相关：${escapeHtml(rel)}</div>`:''}
+        ${p.note?`<div style="font-size:13px;color:var(--muted)">${escapeHtml(p.note)}</div>`:''}
+      </div>
+      <button class="btn ghost small" data-plan-edit="${p.id}">改</button>
+      <button class="btn ghost small" data-plan-del="${p.id}">删</button>
+    </div>`;
+  }).join('');
+  v.innerHTML = `
+    <div class="view-title">计划日期</div>
+    <div class="view-sub">点格子选一天，再安排当天的事。首页"今日计划"会自动取今天的安排。</div>
+    <div class="cal-head">
+      <div class="cal-nav">
+        <button class="btn ghost small" id="cal-prev">‹ 上月</button>
+        <h3>${calYear} 年 ${calMonth+1} 月</h3>
+        <button class="btn ghost small" id="cal-next">下月 ›</button>
+        <button class="btn ghost small" id="cal-today">回到今天</button>
+      </div>
+      <button class="btn" id="plan-add">＋ 给 ${selDate.slice(5).replace('-','/')} 加计划</button>
+    </div>
+    <div class="cal-grid">${cells}</div>
+    <div class="card section-gap">
+      <h3>${selDate} 的安排</h3>
+      ${listHtml}
+    </div>`;
+  // 事件
+  document.getElementById('cal-prev').onclick=()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); };
+  document.getElementById('cal-next').onclick=()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); };
+  document.getElementById('cal-today').onclick=()=>{ const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth(); selDate=todayStr(); renderCalendar(); };
+  v.querySelectorAll('.cal-cell[data-date]').forEach(c=>{
+    c.onclick=()=>{ selDate=c.dataset.date; renderCalendar(); };
+  });
+  document.getElementById('plan-add').onclick=()=>planForm(null);
+  v.querySelectorAll('[data-plan-done]').forEach(cb=>cb.onchange=()=>{
+    const p=state.plans.find(x=>x.id===cb.dataset.planDone); p.done=cb.checked; save(); renderCalendar();
+  });
+  v.querySelectorAll('[data-plan-edit]').forEach(b=>b.onclick=()=>planForm(state.plans.find(x=>x.id===b.dataset.planEdit)));
+  v.querySelectorAll('[data-plan-del]').forEach(b=>b.onclick=()=>{
+    const p=state.plans.find(x=>x.id===b.dataset.planDel);
+    confirmDialog(`删除计划"${p.title}"？`, ()=>{ state.plans=state.plans.filter(x=>x.id!==p.id); save(); renderCalendar(); toast('已删除'); });
+  });
+}
+function typeLabel(t){ return ({work:'工作',training:'训练',life:'生活'})[t]||'工作'; }
+function planForm(plan){
+  const isEdit = !!plan;
+  plan = plan || { date:selDate, time:'', title:'', type:'work', peopleIds:[], note:'', done:false };
+  const peopleOpts = state.people.map(p=>
+    `<label style="display:inline-flex;gap:6px;align-items:center;margin-right:14px;font-size:14px;cursor:pointer">
+       <input type="checkbox" value="${p.id}" ${plan.peopleIds.includes(p.id)?'checked':''} class="ppl-cb"> ${escapeHtml(p.name)}
+     </label>`).join('') || '<span style="color:var(--muted);font-size:13px">还没有人员，可稍后在名单里加</span>';
+  openModal(`
+    <h3>${isEdit?'改计划':'加计划'}</h3>
+    <div class="field"><label>日期</label><input type="date" id="f-date" value="${plan.date}"></div>
+    <div class="field"><label>标题（必填）</label><input id="f-title" value="${escapeHtml(plan.title)}" placeholder="如：下午带短跑组跑间歇"></div>
+    <div class="form-row">
+      <div class="field"><label>时间</label><input type="time" id="f-time" value="${plan.time}"></div>
+      <div class="field"><label>类型</label>
+        <select id="f-type">
+          <option value="work" ${plan.type==='work'?'selected':''}>工作</option>
+          <option value="training" ${plan.type==='training'?'selected':''}>训练</option>
+          <option value="life" ${plan.type==='life'?'selected':''}>生活</option>
+        </select></div>
+    </div>
+    <div class="field"><label>关联人员（可多选）</label>${peopleOpts}</div>
+    <div class="field"><label>备注</label><textarea id="f-note" rows="2">${escapeHtml(plan.note)}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="pf-cancel">取消</button>
+      <button class="btn" id="pf-save">保存</button>
+    </div>`);
+  document.getElementById('pf-cancel').onclick=closeModal;
+  document.getElementById('pf-save').onclick=()=>{
+    const title = document.getElementById('f-title').value.trim();
+    if(!title){ toast('标题不能为空'); return; }
+    plan.date = document.getElementById('f-date').value || plan.date;
+    plan.time = document.getElementById('f-time').value;
+    plan.title = title;
+    plan.type = document.getElementById('f-type').value;
+    plan.note = document.getElementById('f-note').value.trim();
+    plan.peopleIds = [...document.querySelectorAll('.ppl-cb:checked')].map(c=>c.value);
+    if(!isEdit){ plan.id=uid(); state.plans.push(plan); }
+    save(); closeModal(); selDate=plan.date; renderCalendar(); toast('已保存');
+  };
+}
+/* ================= 阶段3：人员名单 + 专属页 ================= */
+let peopleFilter = 'all', peopleQuery = '';
+function personStatusDot(person){
+  const g = state.goals.filter(g=>g.personId===person.id && !g.done);
+  if(!g.length) return 'dot-status';
+  const soon = g.some(x=>daysUntil(x.deadline)<=10);
+  return soon ? 'dot-status hot' : 'dot-status ok';
+}
+function renderPeople(){
+  const v = document.getElementById('view-people');
+  let list = state.people.slice();
+  if(peopleFilter!=='all') list = list.filter(p=>p.kind===peopleFilter);
+  if(peopleQuery) list = list.filter(p=>p.name.includes(peopleQuery));
+  const rows = list.map(p=>{
+    const key = p.kind==='student'
+      ? `剩 ${p.student.remainingClasses} 节课`
+      : `主项：${escapeHtml(p.athlete.specialty||'—')}`;
+    return `<div class="row" data-person="${p.id}" style="cursor:pointer">
+      <div class="grow">
+        <div style="font-weight:600">${escapeHtml(p.name)}
+          <span class="tag ${p.kind}">${p.kind==='student'?'学员':'队员'}</span></div>
+        <div style="font-size:13px;color:var(--muted)">${key}</div>
+      </div>
+      <span class="${personStatusDot(p)}" title="目标状态"></span>
+    </div>`;
+  }).join('');
+  v.innerHTML = `
+    <div class="view-title">人员名单</div>
+    <div class="view-sub">学员和队员都在这里，点名字看他的档案、目标和阶段记录。</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <input id="ppl-q" placeholder="搜索姓名…" value="${escapeHtml(peopleQuery)}" style="padding:8px 12px;border:1px solid var(--line);border-radius:6px;width:200px">
+      <button class="btn ghost small filter-btn" data-f="all">全部</button>
+      <button class="btn ghost small filter-btn" data-f="student">学员</button>
+      <button class="btn ghost small filter-btn" data-f="athlete">队员</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="ppl-add">＋ 加人</button>
+    </div>
+    <div class="card">${rows || '<div class="empty-tip">还没有人。点右上角"加人"，加第一个学员或队员。</div>'}</div>`;
+  // 事件
+  v.querySelector('#ppl-q').oninput = e=>{ peopleQuery=e.target.value.trim(); renderPeople();
+    document.querySelector('#ppl-q').focus(); document.querySelector('#ppl-q').setSelectionRange(99,99); };
+  v.querySelectorAll('.filter-btn').forEach(b=>{
+    if(b.dataset.f===peopleFilter) b.classList.add('active');
+    b.onclick=()=>{ peopleFilter=b.dataset.f; renderPeople(); };
+  });
+  v.querySelector('#ppl-add').onclick = ()=>personForm(null);
+  v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
+}
+function personForm(p){
+  const isEdit = !!p;
+  p = p || { kind:'student', name:'', createdAt:todayStr() };
+  openModal(`
+    <h3>${isEdit?'改档案':'加人'}</h3>
+    <div class="field"><label>身份</label>
+      <select id="pf-kind" ${isEdit?'disabled':''}>
+        <option value="student" ${p.kind==='student'?'selected':''}>学员（体培学生）</option>
+        <option value="athlete" ${p.kind==='athlete'?'selected':''}>队员（田径训练生）</option>
+      </select></div>
+    <div class="field"><label>姓名（必填）</label><input id="pf-name" value="${escapeHtml(p.name)}"></div>
+    <div class="ppl-stu">
+      <div class="form-row">
+        <div class="field"><label>年龄</label><input id="pf-age" value="${p.student?p.student.age:''}"></div>
+        <div class="field"><label>家长电话</label><input id="pf-phone" value="${p.student?escapeHtml(p.student.parentPhone):''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>报名项目</label><input id="pf-project" value="${p.student?escapeHtml(p.student.project):''}"></div>
+        <div class="field"><label>报名日期</label><input type="date" id="pf-edate" value="${p.student?p.student.enrollDate:todayStr()}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>缴费金额（元）</label><input id="pf-paid" value="${p.student?p.student.paidAmount:''}"></div>
+        <div class="field"><label>剩余课时</label><input id="pf-left" type="number" value="${p.student?p.student.remainingClasses:''}"></div>
+      </div>
+    </div>
+    <div class="ppl-ath" style="display:none">
+      <div class="form-row">
+        <div class="field"><label>组别</label><input id="pf-group" value="${p.athlete?escapeHtml(p.athlete.group):''}"></div>
+        <div class="field"><label>主项（如短跑/跳跃）</label><input id="pf-spec" value="${p.athlete?escapeHtml(p.athlete.specialty):''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>入队日期</label><input type="date" id="pf-jdate" value="${p.athlete?p.athlete.joinDate:todayStr()}"></div>
+        <div class="field"><label>教练备注</label><input id="pf-note" value="${p.athlete?escapeHtml(p.athlete.note):''}"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="pfc-cancel">取消</button>
+      <button class="btn" id="pfc-save">保存</button>
+    </div>`);
+  const kindSel = document.getElementById('pf-kind');
+  function syncKind(){
+    const k = kindSel.value;
+    document.querySelector('.ppl-stu').style.display = k==='student'?'':'none';
+    document.querySelector('.ppl-ath').style.display = k==='athlete'?'':'none';
+  }
+  kindSel.onchange = syncKind; syncKind();
+  document.getElementById('pfc-cancel').onclick = closeModal;
+  document.getElementById('pfc-save').onclick = ()=>{
+    const name = document.getElementById('pf-name').value.trim();
+    if(!name){ toast('姓名不能为空'); return; }
+    const k = kindSel.value;
+    const obj = isEdit ? p : { id:uid(), createdAt:todayStr() };
+    obj.kind = k; obj.name = name;
+    if(k==='student'){
+      obj.student = {
+        age: document.getElementById('pf-age').value,
+        parentPhone: document.getElementById('pf-phone').value.trim(),
+        project: document.getElementById('pf-project').value.trim(),
+        enrollDate: document.getElementById('pf-edate').value,
+        paidAmount: document.getElementById('pf-paid').value,
+        remainingClasses: Number(document.getElementById('pf-left').value)||0
+      };
+    } else {
+      obj.athlete = {
+        group: document.getElementById('pf-group').value.trim(),
+        specialty: document.getElementById('pf-spec').value.trim(),
+        joinDate: document.getElementById('pf-jdate').value,
+        note: document.getElementById('pf-note').value.trim()
+      };
+    }
+    if(!isEdit) state.people.push(obj);
+    save(); closeModal(); renderPeople(); toast('已保存');
+  };
+}
+function renderPerson(id){
+  const p = state.people.find(x=>x.id===id);
+  const v = document.getElementById('view-person');
+  if(!p){ v.innerHTML='<div class="empty-tip">找不到这个人</div>'; return; }
+  const goals = state.goals.filter(g=>g.personId===id).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  const recs = state.stageRecords.filter(r=>r.personId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const stu = p.kind==='student';
+  const profileRows = stu ? `
+    <div class="form-row">
+      <div class="field"><label>年龄</label><input id="ed-age" value="${escapeHtml(p.student.age)}"></div>
+      <div class="field"><label>家长电话</label><input id="ed-phone" value="${escapeHtml(p.student.parentPhone)}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>报名项目</label><input id="ed-project" value="${escapeHtml(p.student.project)}"></div>
+      <div class="field"><label>报名日期</label><input type="date" id="ed-edate" value="${p.student.enrollDate}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>缴费金额（元）</label><input id="ed-paid" value="${escapeHtml(p.student.paidAmount)}"></div>
+      <div class="field"><label>剩余课时</label><input type="number" id="ed-left" value="${p.student.remainingClasses}"></div>
+    </div>` : `
+    <div class="form-row">
+      <div class="field"><label>组别</label><input id="ed-group" value="${escapeHtml(p.athlete.group)}"></div>
+      <div class="field"><label>主项</label><input id="ed-spec" value="${escapeHtml(p.athlete.specialty)}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>入队日期</label><input type="date" id="ed-jdate" value="${p.athlete.joinDate}"></div>
+      <div class="field"><label>教练备注</label><input id="ed-note" value="${escapeHtml(p.athlete.note)}"></div>
+    </div>`;
+  const goalHtml = goals.map(g=>{
+    const left = daysUntil(g.deadline);
+    const leftCls = (!g.done && left<=10) ? 'warn-text' : '';
+    return `<div class="row">
+      <input type="checkbox" data-goal-done="${g.id}" ${g.done?'checked':''} style="width:18px;height:18px">
+      <div class="grow" style="${g.done?'text-decoration:line-through;color:var(--muted)':''}">
+        ${escapeHtml(g.text)} <span style="font-size:13px;color:var(--muted)">截止 ${g.deadline}</span>
+        ${!g.done?` <span class="${leftCls}" style="font-size:13px">（剩 ${left} 天）</span>`:''}
+      </div>
+      <button class="btn ghost small" data-goal-del="${g.id}">删</button>
+    </div>`;
+  }).join('') || '<div class="empty-tip">还没设目标</div>';
+  const recHtml = recs.map(r=>{
+    const m = r.metrics;
+    const parts = stu
+      ? `出勤 ${m.attendance||'—'} 次 · 体测 ${escapeHtml(m.testResult||'—')} · 剩课时 ${m.remainingClasses||'—'}`
+      : `100米 ${m.sprint100||'—'}s · 跳远 ${m.longJump||'—'}m · 深蹲 ${m.squat||'—'}kg · 体重 ${m.weight||'—'}kg · 周量 ${m.weeklyVolume||'—'}`;
+    return `<div class="tl-item">
+      <div class="tl-date">${r.date}</div>
+      <div>${parts}</div>
+      ${r.note?`<div style="font-size:13px;color:var(--muted)">${escapeHtml(r.note)}</div>`:''}
+    </div>`;
+  }).join('') || '<div class="empty-tip">还没记过阶段数据</div>';
+  v.innerHTML = `
+    <div style="margin-bottom:10px"><button class="btn ghost small" id="ppl-back">‹ 返回名单</button></div>
+    <div class="view-title">${escapeHtml(p.name)} <span class="tag ${p.kind}">${stu?'学员':'队员'}</span></div>
+    <div class="view-sub">${stu?'体培学员':'田径队员'}</div>
+    <div class="card">
+      <h3>档案</h3>
+      ${profileRows}
+      <div style="text-align:right"><button class="btn small" id="ed-save">保存档案</button></div>
+    </div>
+    <div class="card section-gap">
+      <h3>阶段目标 <button class="btn small" id="goal-add" style="float:right">＋ 加目标</button></h3>
+      ${goalHtml}
+    </div>
+    <div class="card section-gap">
+      <h3>阶段数据记录 <button class="btn small" id="rec-add" style="float:right">＋ 记一次</button></h3>
+      <div class="tl">${recHtml}</div>
+    </div>`;
+  v.querySelector('#ppl-back').onclick = ()=>navigate('people');
+  v.querySelector('#ed-save').onclick = ()=>{
+    if(stu){
+      p.student.age = document.getElementById('ed-age').value;
+      p.student.parentPhone = document.getElementById('ed-phone').value.trim();
+      p.student.project = document.getElementById('ed-project').value.trim();
+      p.student.enrollDate = document.getElementById('ed-edate').value;
+      p.student.paidAmount = document.getElementById('ed-paid').value;
+      p.student.remainingClasses = Number(document.getElementById('ed-left').value)||0;
+    } else {
+      p.athlete.group = document.getElementById('ed-group').value.trim();
+      p.athlete.specialty = document.getElementById('ed-spec').value.trim();
+      p.athlete.joinDate = document.getElementById('ed-jdate').value;
+      p.athlete.note = document.getElementById('ed-note').value.trim();
+    }
+    save(); toast('档案已保存');
+  };
+  v.querySelector('#goal-add').onclick = ()=>goalForm(id);
+  v.querySelector('#rec-add').onclick = ()=>recordForm(id);
+  v.querySelectorAll('[data-goal-done]').forEach(cb=>cb.onchange=()=>{
+    const g=state.goals.find(x=>x.id===cb.dataset.goalDone); g.done=cb.checked; save(); renderPerson(id);
+  });
+  v.querySelectorAll('[data-goal-del]').forEach(b=>b.onclick=()=>{
+    const g=state.goals.find(x=>x.id===b.dataset.goalDel);
+    confirmDialog(`删除目标"${g.text}"？`, ()=>{ state.goals=state.goals.filter(x=>x.id!==g.id); save(); renderPerson(id); toast('已删除'); });
+  });
+}
+function goalForm(personId){
+  openModal(`
+    <h3>加阶段目标</h3>
+    <div class="field"><label>目标内容（必填）</label><input id="gf-text" placeholder="如：三个月内100米跑进13秒"></div>
+    <div class="field"><label>截止日期</label><input type="date" id="gf-deadline"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="gf-cancel">取消</button>
+      <button class="btn" id="gf-save">保存</button>
+    </div>`);
+  document.getElementById('gf-cancel').onclick=closeModal;
+  document.getElementById('gf-save').onclick=()=>{
+    const text=document.getElementById('gf-text').value.trim();
+    if(!text){ toast('目标内容不能为空'); return; }
+    state.goals.push({ id:uid(), personId, text, deadline:document.getElementById('gf-deadline').value||todayStr(), done:false });
+    save(); closeModal(); renderPerson(personId); toast('已保存');
+  };
+}
+function recordForm(personId){
+  const p = state.people.find(x=>x.id===personId);
+  const stu = p.kind==='student';
+  const fields = stu ? `
+    <div class="form-row">
+      <div class="field"><label>出勤次数</label><input type="number" id="rf-att" value="0"></div>
+      <div class="field"><label>体测成绩</label><input id="rf-test" placeholder="如 13.5秒"></div>
+    </div>
+    <div class="field"><label>剩余课时</label><input type="number" id="rf-left" value="0"></div>` : `
+    <div class="form-row">
+      <div class="field"><label>100米（秒）</label><input type="number" step="0.01" id="rf-100"></div>
+      <div class="field"><label>立定跳远（米）</label><input type="number" step="0.01" id="rf-jump"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>深蹲（kg）</label><input type="number" id="rf-squat"></div>
+      <div class="field"><label>体重（kg）</label><input type="number" step="0.1" id="rf-weight"></div>
+    </div>
+    <div class="field"><label>本周训练量</label><input id="rf-vol" placeholder="如 跑了 40 公里"></div>`;
+  openModal(`
+    <h3>记一次阶段数据</h3>
+    <div class="field"><label>日期</label><input type="date" id="rf-date" value="${todayStr()}"></div>
+    ${fields}
+    <div class="field"><label>备注</label><input id="rf-note" placeholder="一句话状态"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="rf-cancel">取消</button>
+      <button class="btn" id="rf-save">保存</button>
+    </div>`);
+  document.getElementById('rf-cancel').onclick=closeModal;
+  document.getElementById('rf-save').onclick=()=>{
+    const metrics = stu ? {
+      attendance: Number(document.getElementById('rf-att').value)||0,
+      testResult: document.getElementById('rf-test').value.trim(),
+      remainingClasses: Number(document.getElementById('rf-left').value)||0
+    } : {
+      sprint100: document.getElementById('rf-100').value,
+      longJump: document.getElementById('rf-jump').value,
+      squat: document.getElementById('rf-squat').value,
+      weight: document.getElementById('rf-weight').value,
+      weeklyVolume: document.getElementById('rf-vol').value.trim()
+    };
+    state.stageRecords.push({ id:uid(), personId, date:document.getElementById('rf-date').value||todayStr(),
+      metrics, note:document.getElementById('rf-note').value.trim() });
+    save(); closeModal(); renderPerson(personId); toast('已记录');
+  };
+}
+/* ================= 阶段4：阶段汇总页 ================= */
+const METRIC_DEF = {
+  sprint100: { label:'100米', unit:'s', dir:'down' },
+  longJump:  { label:'跳远', unit:'m', dir:'up' },
+  squat:     { label:'深蹲', unit:'kg', dir:'up' },
+  weight:    { label:'体重', unit:'kg', dir:'down' },
+  attendance:{ label:'出勤', unit:'次', dir:'up' },
+  remainingClasses: { label:'剩课时', unit:'节', dir:'neutral' }
+};
+function comparePerson(recs){
+  // 对每个指标，各自找它最近出现的两次记录来对比
+  const sorted = recs.slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const out = [];
+  for(const key of Object.keys(METRIC_DEF)){
+    const series = sorted.filter(r=>r.metrics && r.metrics[key]!=='' && r.metrics[key]!=null);
+    if(series.length<2) continue;
+    const prev = series[series.length-2], curr = series[series.length-1];
+    const a = parseFloat(prev.metrics[key]), b = parseFloat(curr.metrics[key]);
+    if(isNaN(a)||isNaN(b)) continue;
+    const def = METRIC_DEF[key];
+    let cls = 'flat';
+    if(def.dir!=='neutral'){
+      if(b < a){ cls = (def.dir==='down') ? 'up' : 'down'; }
+      else if(b > a){ cls = (def.dir==='up') ? 'up' : 'down'; }
+    }
+    out.push(`${def.label} <span class="${cls}">${a}${def.unit}→${b}${def.unit}</span>`);
+  }
+  const ts = sorted.filter(r=>r.metrics && r.metrics.testResult);
+  if(ts.length>=2){
+    const p = ts[ts.length-2].metrics.testResult, c = ts[ts.length-1].metrics.testResult;
+    if(p && c && p!==c) out.push(`体测 <span class="flat">${escapeHtml(p)}→${escapeHtml(c)}</span>`);
+  }
+  return out;
+}
+function renderStages(){
+  const v = document.getElementById('view-stages');
+  const rows = state.people.map(p=>{
+    const goals = state.goals.filter(g=>g.personId===p.id && !g.done);
+    const recs = state.stageRecords.filter(r=>r.personId===p.id).sort((a,b)=>b.date.localeCompare(a.date));
+    const goalHtml = goals.length
+      ? goals.map(g=>{
+          const left = daysUntil(g.deadline);
+          const cls = left<=10 ? 'warn-text' : '';
+          return `<div style="font-size:13px"><span class="${cls}">${escapeHtml(g.text)}（剩 ${left} 天）</span></div>`;
+        }).join('')
+      : '<div style="font-size:13px;color:var(--muted)">无进行中目标</div>';
+    let cmp = '';
+    if(recs.length>=2){
+      cmp = `<div style="font-size:13px;color:var(--muted);margin-top:4px">最近对比：${comparePerson(recs).join('　') || '—'}</div>`;
+    } else if(recs.length===1){
+      cmp = '<div style="font-size:13px;color:var(--muted);margin-top:4px">只有一次记录，再记一次就能看对比</div>';
+    } else {
+      cmp = '<div style="font-size:13px;color:var(--muted);margin-top:4px">还没记过数据</div>';
+    }
+    return `<div class="row" data-person="${p.id}" style="cursor:pointer">
+      <div class="grow">
+        <div style="font-weight:600">${escapeHtml(p.name)} <span class="tag ${p.kind}">${p.kind==='student'?'学员':'队员'}</span></div>
+        ${goalHtml}${cmp}
+      </div>
+    </div>`;
+  }).join('');
+  v.innerHTML = `
+    <div class="view-title">阶段与目标</div>
+    <div class="view-sub">谁的目标快到期、最近数据是进步还是退步，都在这里。点某个人进他的档案。</div>
+    <div style="margin-bottom:14px;text-align:right"><button class="btn" id="stg-add">＋ 记一次阶段数据</button></div>
+    <div class="card">${rows || '<div class="empty-tip">还没有人员，先去名单里加一个</div>'}</div>`;
+  v.querySelector('#stg-add').onclick = ()=>{
+    if(!state.people.length){ toast('先加一个人'); return; }
+    openModal(`
+      <h3>选一个人记数据</h3>
+      <div class="field"><label>选择人员</label>
+        <select id="sr-person">${state.people.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}（${p.kind==='student'?'学员':'队员'}）</option>`).join('')}</select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="sr-cancel">取消</button>
+        <button class="btn" id="sr-next">下一步</button>
+      </div>`);
+    document.getElementById('sr-cancel').onclick=closeModal;
+    document.getElementById('sr-next').onclick=()=>{ closeModal(); recordForm(document.getElementById('sr-person').value); };
+  };
+  v.querySelectorAll('[data-person]').forEach(r=>r.onclick=()=>navigate('person', r.dataset.person));
+}
+/* ================= 阶段6：数据与设置 ================= */
+function renderSettings(){
+  const v = document.getElementById('view-settings');
+  v.innerHTML = `
+    <div class="view-title">数据与设置</div>
+    <div class="view-sub">你的所有数据只存在这台电脑的这个浏览器里。请定期导出备份。</div>
+    <div class="card" style="max-width:620px">
+      <h3>导出备份</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">把全部数据下载成一个文件存到电脑里，建议每月导一次。</p>
+      <button class="btn" id="btn-export">导出备份（.json）</button>
+    </div>
+    <div class="card section-gap" style="max-width:620px">
+      <h3>恢复备份</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">选择之前导出的备份文件。<span class="warn-text">这会覆盖现在的所有数据。</span></p>
+      <input type="file" id="import-file" accept=".json" style="font-size:13px">
+    </div>
+    <div class="card section-gap" style="max-width:620px">
+      <h3>清空重来</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">删除本机全部数据，回到空白状态。请先确认已导出备份。</p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="clear-input" placeholder="输入"清空"二字" style="width:160px;padding:8px 10px;border:1px solid var(--line);border-radius:6px">
+        <button class="btn danger" id="btn-clear" disabled>清空全部数据</button>
+      </div>
+    </div>
+    <div class="card section-gap" style="max-width:620px">
+      <h3>重要说明</h3>
+      <p style="font-size:13px;color:var(--muted);line-height:1.9">
+        1. 这个 App 不联网、不登录，数据只保存在当前电脑的这个浏览器里。<br>
+        2. 别清理浏览器缓存、别换浏览器打开，否则数据会丢。<br>
+        3. 建议每月点一次"导出备份"，把文件存到电脑上或微信文件传输助手。
+      </p>
+    </div>`;
+  v.querySelector('#btn-export').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '工作台备份-' + todayStr() + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('已导出备份');
+  };
+  v.querySelector('#import-file').onchange = e=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      let data;
+      try{ data = JSON.parse(reader.result); }
+      catch(err){ toast('文件格式不对，导入失败'); return; }
+      confirmDialog('恢复备份会覆盖当前所有数据，确定继续？', ()=>{
+        state = Object.assign(defaultState(), data);
+        save(); location.reload();
+      });
+    };
+    reader.readAsText(f);
+  };
+  const ci = v.querySelector('#clear-input');
+  const cb = v.querySelector('#btn-clear');
+  ci.oninput = ()=>{ cb.disabled = (ci.value.trim()!=='清空'); };
+  cb.onclick = ()=>{
+    confirmDialog('将删除本机全部数据且不可恢复，确定？', ()=>{
+      localStorage.removeItem(STORE_KEY);
+      location.reload();
+    });
+  };
+}
+
+/* ================= 启动 ================= */
+state = load();
+(function init(){
+  const d = new Date();
+  const week = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  document.getElementById('top-date').textContent =
+    d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + week;
+  navigate('home');
+})();
+</script>
+</body>
+</html>
