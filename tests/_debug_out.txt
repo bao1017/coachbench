@@ -1,17 +1,40 @@
-LEN=1048
-VIS=True
-TEXT=‹ 返回名单
-测试 队员
-田径队员
-档案
-组别
-主项
-入队日期
-保存档案
-阶段目标
-＋ 加目标
-还没设目标
-阶段数据记录
-＋ 记一次
-还没记过阶段数据
-ERRS=[]
+INFO={"sel":"2026-11-05","all":[{"d":"2026-11-05","t":"起跑练习","g":"normal"},{"d":"2026-11-05","t":"康复慢跑","g":"injured"}],"filt":[{"g":"normal","m":true},{"g":"injured","m":false}]}
+DOM={"ptn":"<tbody id=\"pt-normal\">\n      <tr>\n        <td style=\"padding:4px\">1</td>\n        <td style=\"padding:4px\"><input class=\"pt-c\" value=\"起跑练习\" style=\"width:100%\"></td>\n        <td style=\"padding:4px\"><input class=\"pt-r\" value=\"30\" style=\"width:100%\"></td>\n        <td style=\"padding:4px\"><input class=\"pt-s\" value=\"4\" style=\"width:100%\"></td>\n        <td style=\"padding:4px\"><input class=\"pt-i\" value=\"大\" ","pti":"<tbody id=\"pt-injured\">\n      <tr>\n        <td style=\"padding:4px\">1</td>\n        <td style=\"padding:4px\"><input class=\"pt-c\" value=\"康复慢跑\" style=\"width:100%\"></td>\n        <td style=\"padding:4px\"><inp"}
+MODAL_VISIBLE=True
+MODAL_TEXT=2026-11-05 训练计划
+正常训练计划
+#	内容	次数	组数	强度	
+1					删
+＋ 加一行
+伤病队员训练计划
+#	内容	次数	组数	强度	
+1					删
+＋ 加一行
+取消
+保存
+HOME_TEXT=
+    
+      
+        2今天未完成的计划
+      
+        0本周已测人数（测试总览）
+      
+        0在册队员（人员总览）
+    
+    
+      
+        今日计划 去日历安排 ›
+        
+        正常起跑练习
+      
+        伤病康复慢跑
+      
+        
+      
+      
+        快速备忘
+        
+        随手写一句备忘，回车就贴上
+      
+    
+ERRORS=[]

@@ -7,15 +7,26 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.on('console', lambda m: errs.append(m.text) if m.type=='error' else None)
     pg.goto(pathlib.Path(r'C:\Users\陈硕腾\Desktop\app\工作生活工作台.html').as_uri())
-    pg.evaluate("localStorage.removeItem('coachbench-v1');")
-    pg.evaluate("state.people.push({id:'p1',kind:'athlete',name:'测试',athlete:{group:'A组',specialty:'短跑',joinDate:''}}); save();")
+    pg.wait_for_timeout(500)
+    import datetime
+    today = datetime.date.today().isoformat()
+    pg.evaluate(f"""
+      state.plans.push({{id:'p1',date:'{today}',title:'起跑练习',reps:'30',sets:'4',intensity:'大',group:'normal'}});
+      state.plans.push({{id:'p2',date:'{today}',title:'康复慢跑',reps:'2',sets:'2',intensity:'低',group:'injured'}});
+      save();
+    """)
     pg.reload(); pg.wait_for_timeout(300)
-    pg.click('.nav-item[data-view=people]'); pg.wait_for_timeout(200)
-    pg.click('[data-person]'); pg.wait_for_timeout(300)
-    print('LEN:', len(pg.inner_html('#view-person')))
-    print('VISIBLE:', pg.is_visible('#view-person'))
-    print('TEXT:', pg.inner_text('#view-person')[:200])
-    print('ERRORS:', errs)
-    import io, sys
+    pg.click('.nav-item[data-view=home]'); pg.wait_for_timeout(200)
+    home = pg.inner_text('#view-home')
+    pg.click('.nav-item[data-view=calendar]'); pg.wait_for_timeout(200)
+    info = pg.evaluate(f"""JSON.stringify({{
+      sel: document.querySelector('.cal-cell.selected')?.dataset.date,
+      all: state.plans.map(p=>({{d:p.date,t:p.title,g:p.group}})),
+      filt: state.plans.filter(p=>p.date==='{today}').map(p=>({{g:p.group, m:(p.group||'normal')==='normal'}}))
+    }})""")
+    pg.click(f'.cal-cell[data-date="{today}"]'); pg.wait_for_timeout(300)
+    dom = pg.evaluate("JSON.stringify({ptn: document.getElementById('pt-normal')?.outerHTML?.slice(0,400), pti: document.getElementById('pt-injured')?.outerHTML?.slice(0,200)})")
+    txt = pg.inner_text('#modal')
+    body = pg.inner_text('#view-home')
     open(r'C:\Users\陈硕腾\Desktop\app\tests\_debug_out.txt','w',encoding='utf-8').write(
-      f"LEN={len(pg.inner_html('#view-person'))}\nVIS={pg.is_visible('#view-person')}\nTEXT={pg.inner_text('#view-person')[:300]}\nERRS={errs}")
+      f'INFO={info}\nDOM={dom}\nMODAL_VISIBLE={pg.is_visible("#overlay")}\nMODAL_TEXT={txt[:500]}\nHOME_TEXT={body[:300]}\nERRORS={errs}')

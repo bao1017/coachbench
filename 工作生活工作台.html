@@ -160,6 +160,11 @@ input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
 .field input::placeholder,.field textarea::placeholder{color:rgba(255,255,255,.35)}
 .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid rgba(255,255,255,.5);outline-offset:-1px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#modal input.pt-c,#modal input.pt-r,#modal input.pt-s,#modal input.pt-i{
+  padding:7px 9px;border:1px solid rgba(255,255,255,.16);border-radius:8px;
+  background:rgba(255,255,255,.08);color:#fff;
+}
+#modal input:focus{outline:2px solid rgba(255,255,255,.4);outline-offset:-1px}
 
 /* ============ 日历 ============ */
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
