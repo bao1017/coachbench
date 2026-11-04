@@ -297,9 +297,8 @@ function renderHome(){
   const overdue = state.plans.filter(p=>!p.done && p.date < today);
   const peopleById = Object.fromEntries(state.people.map(p=>[p.id,p.name]));
   const planRow = p => `
-    <div class="row">
-      <input type="checkbox" data-hp-done="${p.id}" ${p.done?'checked':''} style="width:18px;height:18px">
-      <div class="grow" style="${p.done?'text-decoration:line-through;color:var(--muted)':''}">
+    <div class="row" style="padding:6px 0">
+      <div class="grow">
         <span class="tag ${p.group==='injured'?'student':'athlete'}" style="margin-right:6px">${p.group==='injured'?'伤病':'正常'}</span>${escapeHtml(p.title)}
       </div>
     </div>`;
@@ -340,9 +339,6 @@ function renderHome(){
     </div>`;
   v.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>navigate(b.dataset.go));
   v.querySelector('#go-cal').onclick=()=>navigate('calendar');
-  v.querySelectorAll('[data-hp-done]').forEach(cb=>cb.onchange=()=>{
-    const p=state.plans.find(x=>x.id===cb.dataset.hpDone); p.done=cb.checked; save(); renderHome();
-  });
   const mi = v.querySelector('#memo-input');
   mi.addEventListener('keydown', e=>{
     if(e.key==='Enter'){
