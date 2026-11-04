@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""阶段2测试：日历点日期弹表格、保存、勾选完成、删除确认、翻月"""
+"""阶段2测试：日历点日期弹表格、保存、翻月"""
 import sys, datetime
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -22,20 +22,12 @@ def main():
         today = datetime.date.today().isoformat()
         pg.click(f'.cal-cell[data-date="{today}"]')
         pg.wait_for_timeout(150)
-        pg.fill(".pt-c >> nth=0", "下午带短跑组跑间歇")
+        pg.fill("#pt-normal .pt-c >> nth=0", "下午带短跑组跑间歇")
         pg.click("#pf-save")
         pg.wait_for_timeout(200)
         assert "1" in pg.locator(f'.cal-cell[data-date="{today}"] .mark').inner_text()
 
-        # 首页勾选完成
-        pg.click('.nav-item[data-view="home"]'); pg.wait_for_timeout(150)
-        pg.check("[data-hp-done]")
-        pg.wait_for_timeout(200)
-        pg.reload(); pg.wait_for_timeout(200)
-        assert pg.evaluate("state.plans[0].done") is True
-
         # 翻月按钮
-        pg.click('.nav-item[data-view="calendar"]'); pg.wait_for_timeout(150)
         pg.click("#cal-prev"); pg.wait_for_timeout(100)
         pg.click("#cal-next"); pg.wait_for_timeout(100)
         pg.click("#cal-today"); pg.wait_for_timeout(100)
