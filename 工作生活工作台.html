@@ -638,33 +638,37 @@ function renderPerson(id){
 function bindSwipe(root){
   root.querySelectorAll('.swipe').forEach(w=>{
     const inner = w.querySelector('.swipe-in');
-    let sx=0, sy=0, dx=0, dragging=false, open=false;
+    let sx=0, sy=0, dx=0, dragging=false, open=false, pid=null;
     inner.addEventListener('pointerdown', e=>{
-      sx=e.clientX; sy=e.clientY; dx=0; dragging=false;
-      inner.style.transition='none';
-      try{ inner.setPointerCapture(e.pointerId); }catch(_){}
+      sx=e.clientX; sy=e.clientY; dx=0; dragging=false; pid=e.pointerId;
     });
-    inner.addEventListener('pointermove', e=>{
-      if(!sx) return;
+    function onMove(e){
+      if(!sx || e.pointerId!==pid) return;
       const mx = e.clientX - sx, my = e.clientY - sy;
       if(!dragging){
-        if(Math.abs(mx)<4 || Math.abs(my)>Math.abs(mx)) return; // 竖滑/点击不接管
+        if(Math.abs(mx)<4 || Math.abs(my)>Math.abs(mx)) return;
         dragging = true;
+        inner.style.transition='none';
       }
       dx = mx;
       let x = open ? mx-76 : mx;
       if(x>0) x=0; if(x<-76) x=-76;
       inner.style.transform = `translateX(${x}px)`;
-    });
-    const end = ()=>{
-      if(!sx) return;
+      e.preventDefault();
+    }
+    function onUp(e){
+      if(!sx || e.pointerId!==pid) return;
       if(dragging) open = dx < -12;
       inner.style.transition='';
       inner.style.transform = open ? 'translateX(-76px)' : '';
-      sx=0; dragging=false;
-    };
-    inner.addEventListener('pointerup', end);
-    inner.addEventListener('pointercancel', end);
+      sx=0; dragging=false; pid=null;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    }
+    inner.addEventListener('pointerdown', e=>{
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
     inner.addEventListener('click', e=>{
       if(open){ e.preventDefault(); e.stopPropagation(); open=false; inner.style.transform=''; }
     }, true);
