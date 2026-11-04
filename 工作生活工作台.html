@@ -303,9 +303,7 @@ function renderHome(){
         <span class="tag ${p.group==='injured'?'student':'athlete'}" style="margin-right:6px">${p.group==='injured'?'伤病':'正常'}</span>${escapeHtml(p.title)}
       </div>
     </div>`;
-  const overdueHtml = overdue.length
-    ? `<div style="margin-top:10px"><div class="warn-text" style="font-size:13px;margin-bottom:4px">已逾期 ${overdue.length} 件：</div>${overdue.map(planRow).join('')}</div>`
-    : '';
+  const overdueHtml = '';
   const memos = state.memos.slice().reverse().map(m=>`
     <div class="memo-item ${m.done?'done':''}">
       <input type="checkbox" data-memo-done="${m.id}" ${m.done?'checked':''} style="width:16px;height:16px">
