@@ -1165,7 +1165,15 @@ function waitForSDK(){
   });
 }
 
+const IS_LOCAL_FILE = location.protocol === 'file:' || !location.hostname;
 (async function init(){
+  if(IS_LOCAL_FILE){
+    // 本地文件直接打开：云端接口不可用，走纯本地模式，不弹登录、不联网
+    cbReady = false;
+    hideLogin();
+    finishInit();
+    return;
+  }
   await waitForSDK();
   initCloud();
   if(cbAuth && cbAuth.currentUser){
