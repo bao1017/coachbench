@@ -1148,7 +1148,7 @@ async function doLogin(){
     finishInit();
   }catch(e){
     console.error('登录失败', e);
-    const msg = (e && (e.message || e.code || e.category)) || '未知错误';
+    const msg = (e && (e.error_description || e.message || e.error || e.code || e.category)) || '未知错误';
     err.textContent = '登录失败：' + msg;
     btn.disabled = false; btn.textContent = '登 录';
   }
