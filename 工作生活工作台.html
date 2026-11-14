@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#070B1A">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
 <title>我的工作台</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23B53A2E'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='%23FBF9F3' font-family='sans-serif' font-weight='bold'>台</text></svg>">
 <style>
@@ -213,6 +214,24 @@ input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
 }
 #toast.show{opacity:1}
 
+/* ============ 登录页 ============ */
+#login-screen{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:var(--bg);
+}
+.login-card{
+  width:100%;max-width:380px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+  border-radius:20px;padding:30px 26px;backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+.login-logo{
+  width:56px;height:56px;border-radius:16px;background:#B53A2E;color:#FBF9F3;font-weight:800;font-size:30px;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+}
+.login-card h2{text-align:center;font-size:20px;font-weight:800;margin-bottom:6px}
+.login-sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:22px}
+.login-err{color:#FF8A80;font-size:13px;min-height:18px;margin:8px 0}
+
 /* ============ 备忘 ============ */
 .memo-item{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed rgba(255,255,255,.12)}
 .memo-item:last-child{border-bottom:none}
@@ -325,6 +344,17 @@ input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
 
 <div id="overlay"><div id="modal"></div></div>
 <div id="toast"></div>
+<div id="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">台</div>
+    <h2>我的训练工作台</h2>
+    <p class="login-sub">登录后数据自动在电脑和手机间同步</p>
+    <div class="field"><label>账号</label><input id="login-user" autocomplete="username" placeholder="用户名"></div>
+    <div class="field"><label>密码</label><input id="login-pass" type="password" autocomplete="current-password" placeholder="密码"></div>
+    <div id="login-err" class="login-err"></div>
+    <button class="btn" id="login-btn" style="width:100%">登 录</button>
+  </div>
+</div>
 
 <script>
 /* ================= 数据层 ================= */
@@ -340,7 +370,87 @@ function load(){
 }
 function save(){
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORE_KEY + '_ts', String(Date.now()));
   flashSaved();
+  schedulePush();
+}
+
+/* ================= 云端同步（CloudBase） ================= */
+const CB_ENV = 'chenbaobao-d8ghoabd1c14a8692';
+const CB_REGION = 'ap-shanghai';
+const CB_COLLECTION = 'coachdata';
+const CB_ACCESS_KEY = ''; // Publishable Key（控制台 → 环境管理 → API Key 配置，可公开）
+let cbApp = null, cbAuth = null, cbDb = null;
+let cbReady = false, cloudDocId = null, syncTimer = null;
+
+function initCloud(){
+  if(cbApp || typeof cloudbase === 'undefined') return;
+  try{
+    const initOpts = { env: CB_ENV, region: CB_REGION };
+    if(CB_ACCESS_KEY) initOpts.accessKey = CB_ACCESS_KEY;
+    cbApp = cloudbase.init(initOpts);
+    cbAuth = (typeof cbApp.auth === 'function') ? cbApp.auth() : cbApp.auth;
+    cbDb = cbApp.database();
+  }catch(e){ console.error('CloudBase 初始化失败', e); }
+}
+function legacyPayload(u, p){
+  if(u.includes('@')) return { email: u, password: p };
+  if(/^\d{11}$/.test(u)) return { phone: u, password: p };
+  return { username: u, password: p };
+}
+async function signIn(u, p){
+  const cands = [
+    () => cbAuth.signIn({ username: u, password: p }),          // v2 账号密码登录（当前控制台）
+    () => cbAuth.signInWithPassword(legacyPayload(u, p)),       // 旧版 SDK 兼容
+  ];
+  let lastErr;
+  for(const c of cands){
+    try{
+      const res = await c();
+      if(res && res.error) throw res.error;
+      return res;
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+function localTs(){ return Number(localStorage.getItem(STORE_KEY + '_ts') || 0); }
+function schedulePush(){
+  if(!cbReady) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushCloud, 1000);
+}
+async function pushCloud(){
+  if(!cbReady || !cbDb) return;
+  const payload = { state, updatedAt: Date.now() };
+  try{
+    if(cloudDocId){
+      await cbDb.collection(CB_COLLECTION).doc(cloudDocId).update(payload);
+    }else{
+      const r = await cbDb.collection(CB_COLLECTION).add(payload);
+      cloudDocId = (r && r.data && r.data._id) || (r && r._id) || null;
+    }
+  }catch(e){ console.error('云端保存失败', e); }
+}
+async function pullCloud(){
+  if(!cbReady || !cbDb) return;
+  try{
+    const res = await cbDb.collection(CB_COLLECTION).where({}).get();
+    const docs = (res && res.data) || [];
+    if(docs.length){
+      const doc = docs[0];
+      cloudDocId = doc._id;
+      const cloudTs = Number(doc.updatedAt || 0);
+      if(cloudTs >= localTs() && doc.state){
+        state = Object.assign(defaultState(), doc.state);
+        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+        localStorage.setItem(STORE_KEY + '_ts', String(cloudTs));
+      }else{
+        pushCloud();
+      }
+    }else{
+      pushCloud();
+    }
+  }catch(e){ console.error('云端读取失败', e); }
 }
 function uid(){ return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function ymd(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -925,7 +1035,12 @@ function renderSettings(){
   const v = document.getElementById('view-settings');
   v.innerHTML = `
     <div class="view-title">数据与设置</div>
-    <div class="view-sub">你的所有数据只存在这台电脑的这个浏览器里。请定期导出备份。</div>
+    <div class="view-sub">登录后数据会自动同步到云端，电脑和手机共用同一份。请定期导出备份。</div>
+    <div class="card" style="max-width:620px">
+      <h3>账号与同步</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">当前账号：${cbAuth && cbAuth.currentUser ? escapeHtml(cbAuth.currentUser.nickName || cbAuth.currentUser.uid || '已登录') : '本地模式'}</p>
+      <button class="btn ghost" id="btn-logout">退出登录</button>
+    </div>
     <div class="card" style="max-width:620px">
       <h3>导出备份</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:12px">把全部数据下载成一个文件存到电脑里，建议每月导一次。</p>
@@ -947,8 +1062,8 @@ function renderSettings(){
     <div class="card section-gap" style="max-width:620px">
       <h3>重要说明</h3>
       <p style="font-size:13px;color:var(--muted);line-height:1.9">
-        1. 这个 App 不联网、不登录，数据只保存在当前电脑的这个浏览器里。<br>
-        2. 别清理浏览器缓存、别换浏览器打开，否则数据会丢。<br>
+        1. 登录后数据保存在云端，电脑和手机登录同一账号即可看到同一份数据。<br>
+        2. 首次在新设备登录时，会自动拉取云端最新数据。<br>
         3. 建议每月点一次"导出备份"，把文件存到电脑上或微信文件传输助手。
       </p>
     </div>`;
@@ -976,6 +1091,14 @@ function renderSettings(){
     };
     reader.readAsText(f);
   };
+  v.querySelector('#btn-logout').onclick = ()=>{
+    confirmDialog('退出后这台设备需要重新登录，确定退出？', async ()=>{
+      try{ if(cbAuth) await cbAuth.signOut(); }catch(e){}
+      localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(STORE_KEY + '_ts');
+      location.reload();
+    });
+  };
   const ci = v.querySelector('#clear-input');
   const cb = v.querySelector('#btn-clear');
   ci.oninput = ()=>{ cb.disabled = (ci.value.trim()!=='清空'); };
@@ -989,7 +1112,8 @@ function renderSettings(){
 
 /* ================= 启动 ================= */
 state = load();
-(function init(){
+
+function finishInit(){
   const d = new Date();
   const week = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
   document.getElementById('top-date').textContent =
@@ -998,6 +1122,66 @@ state = load();
   navigate('home');
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+}
+
+function showLogin(){
+  document.getElementById('login-screen').style.display = 'flex';
+}
+function hideLogin(){
+  document.getElementById('login-screen').style.display = 'none';
+}
+
+async function doLogin(){
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if(!u || !p){ err.textContent = '请输入账号和密码'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = '登录中…';
+  try{
+    await signIn(u, p);
+    cbReady = true;
+    hideLogin();
+    await pullCloud();
+    finishInit();
+  }catch(e){
+    console.error('登录失败', e);
+    const msg = (e && (e.message || e.code || e.category)) || '未知错误';
+    err.textContent = '登录失败：' + msg;
+    btn.disabled = false; btn.textContent = '登 录';
+  }
+}
+
+function waitForSDK(){
+  return new Promise(res=>{
+    if(typeof cloudbase !== 'undefined') return res();
+    let n = 0;
+    const t = setInterval(()=>{
+      n++;
+      if(typeof cloudbase !== 'undefined' || n >= 20){ clearInterval(t); res(); }
+    }, 200);
+  });
+}
+
+(async function init(){
+  await waitForSDK();
+  initCloud();
+  if(cbAuth && cbAuth.currentUser){
+    cbReady = true;
+    await pullCloud();
+    finishInit();
+  }else if(typeof cloudbase !== 'undefined'){
+    showLogin();
+    const btn = document.getElementById('login-btn');
+    btn.onclick = doLogin;
+    document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  }else{
+    // SDK 未加载（离线/本地文件）时，回退为本地模式，避免一直卡在登录页
+    cbReady = false;
+    hideLogin();
+    finishInit();
   }
 })();
 </script>
