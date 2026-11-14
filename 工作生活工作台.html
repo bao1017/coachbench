@@ -31,6 +31,8 @@ body{
   font-family:"Microsoft YaHei","PingFang SC","SF Pro Display","Segoe UI",sans-serif;
   font-size:15px;line-height:1.6;
   position:relative;overflow:hidden;
+  touch-action:manipulation;
+  overscroll-behavior-y:contain;
 }
 /* 星空背景 */
 body::before,body::after{
@@ -247,7 +249,7 @@ input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
     background:rgba(20,26,48,.85);backdrop-filter:blur(20px);
     border-top:1px solid rgba(255,255,255,.15);border-right:none;
   }
-  .nav-item{flex:1;flex-direction:column;gap:3px;padding:6px 2px;font-size:10px;border-radius:10px;text-align:center}
+  .nav-item{flex:1;flex-direction:column;gap:3px;padding:6px 2px;font-size:9px;border-radius:10px;text-align:center;white-space:nowrap}
   .nav-item svg{width:20px;height:20px}
   .nav-divider{display:none}
   #nav-settings{margin-top:0}
@@ -258,17 +260,20 @@ input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
   .card{padding:14px 14px;border-radius:14px}
   .stat-cell{padding:14px 12px}
   .stat-num{font-size:24px}
-  #main .card > div[style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:1fr !important}
+  .stat-grid{grid-template-columns:1fr !important;gap:10px !important}
   .cal-grid{gap:4px}
   .cal-cell{min-height:84px;font-size:12px;padding:4px}
   .cal-head{flex-wrap:wrap;gap:8px}
   .cal-head h3{font-size:15px}
   .form-row{grid-template-columns:1fr}
+  .metric-grid{grid-template-columns:1fr !important}
   #overlay{padding:0;align-items:stretch}
   #modal{width:100vw;height:100dvh;max-width:none;border-radius:0;padding:20px 16px;overflow-y:auto}
   .row{padding:10px 2px}
-  .btn{padding:10px 16px}
+  .btn{padding:10px 16px;touch-action:manipulation}
   input,button,select,textarea{font-size:16px !important} /* 防 iOS 自动放大 */
+  #modal table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #modal table thead,#modal table tbody{width:100%}
 }
 </style>
 </head>
@@ -429,7 +434,7 @@ function renderHome(){
   const totalPeople = state.people.length;
 
   v.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+    <div class="stat-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
       <button class="stat-cell" data-go="calendar">
         <div class="stat-num">${todayUndone}</div><div class="stat-label">今天未完成的计划</div></button>
       <button class="stat-cell" data-go="stages">
@@ -826,7 +831,7 @@ function recordForm(personId){
   openModal(`
     <h3>记一次阶段数据</h3>
     <div class="field"><label>日期</label><input type="date" id="rf-date" value="${todayStr()}"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${fields}</div>
+    <div class="metric-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">${fields}</div>
     <div class="field"><label>备注</label><input id="rf-note" placeholder="一句话状态"></div>
     <div class="modal-actions">
       <button class="btn ghost" id="rf-cancel">取消</button>
